@@ -269,9 +269,10 @@ const sameDay=(a,b)=>a.toDateString()===b.toDateString();
 function dayLabel(d){const t=new Date(),tm=new Date(t);tm.setDate(t.getDate()+1);
   return sameDay(d,t)?"heute":sameDay(d,tm)?"morgen":WD[d.getDay()]+" "+pad(d.getDate())+"."+pad(d.getMonth()+1)+".";}
 const when=d=>(sameDay(d,new Date())?"":dayLabel(d).replace(/^./,c=>c.toUpperCase())+" ")+hm(d);
-function slots(){
-  const now=new Date();
-  for(let i=0;i<7;i++){
+// Abholtage wie bei SumUp: die nächsten 3 offenen Tage, jeweils nur Zeiten in den Öffnungszeiten
+function slotDays(n=3){
+  const now=new Date(),days=[];
+  for(let i=0;i<8&&days.length<n;i++){
     const day=new Date(now);day.setDate(now.getDate()+i);
     const h=hoursFor(day),mid=new Date(day);mid.setHours(0,0,0,0);
     const at=m=>new Date(mid.getTime()+m*60000);
@@ -279,10 +280,11 @@ function slots(){
     if(earliest>last)continue;
     const out=[at(earliest)];
     for(let m=Math.ceil((earliest+5)/15)*15;m<=last;m+=15)out.push(at(m));
-    return out;
+    days.push(out);
   }
-  return [];
+  return days;
 }
+function slots(){return slotDays(1)[0]||[]}
 function renderOpen(){
   const now=new Date(),h=hoursFor(now),m=now.getHours()*60+now.getMinutes(),s=slots();
   const e=$("openState");
@@ -399,7 +401,7 @@ $("openCart").onclick=()=>openSheet("cart");
 // ---------- Warenkorb + Bestellen ----------
 let pickupSel="",cust=TEL?{name:"",phone:""}:LS.get("deli_cust",{name:"",phone:""}),sending=false,err="";
 function renderCart(){
-  const s=$("sheet"),sl=CFG.paused&&!TEL?[]:slots(),sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0);
+  const s=$("sheet"),sd=CFG.paused&&!TEL?[]:slotDays(3),sl=sd.flat(),sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0);
   const outs=cart.filter(l=>isOut(l.name+" "+(l.extras||[]).join(" ")));
   if(!sl.find(d=>d.toISOString()===pickupSel))pickupSel=sl[0]?sl[0].toISOString():"";
   s.innerHTML=`<div class="sh"><h2>Warenkorb · Cart</h2><button class="x" data-close aria-label="Schließen">✕</button></div>
@@ -408,7 +410,7 @@ function renderCart(){
     <span class="lprice">${eur(unit(l)*l.qty)}</span></div>
     ${l.cfg?`<div class="lh"><div class="lbon" style="flex:1">${bonLines(l).map(([c,t])=>`<span class="bl ${c}">${esc(t)}</span>`).join("")}</div><button class="ledit" data-edit="${i}">Ändern</button></div>`:""}</div>`).join(""):`<p class="note">Noch leer.</p>`}</div>
   <div class="total"><span>Summe</span><span>${eur(sum)}</span></div>
-  ${sl.length?`<label class="f">Abholzeit <span>· Pick-up time</span><select id="pk">${sl.map((d,i)=>`<option value="${d.toISOString()}" ${d.toISOString()===pickupSel?"selected":""}>${sameDay(d,new Date())?(i===0?"So schnell wie möglich · ca. ":"")+hm(d):when(d)} Uhr</option>`).join("")}</select></label>`:`<p class="err">Heute ist keine Bestellung mehr möglich.</p>`}
+  ${sl.length?`<label class="f">Abholzeit <span>· Pick-up time</span><select id="pk">${sd.map(g=>`<optgroup label="${(l=>l.replace(/^./,c=>c.toUpperCase())+(/^(heute|morgen)$/.test(l)?" · "+WD[g[0].getDay()]:""))(dayLabel(g[0]))}">${g.map((d,i)=>`<option value="${d.toISOString()}" ${d.toISOString()===pickupSel?"selected":""}>${sameDay(d,new Date())?(i===0?"So schnell wie möglich · ca. ":"")+hm(d):when(d)} Uhr</option>`).join("")}</optgroup>`).join("")}</select></label>`:`<p class="err">Gerade ist keine Bestellung möglich. Bitte anrufen: 0711 44038178</p>`}
   <label class="f">Name${TEL?" vom Anrufer":""}<input id="nm" autocomplete="${TEL?"off":"name"}" value="${esc(cust.name)}" maxlength="60"></label>
   <label class="f">Telefon <span>${TEL?"· optional":"· für Rückfragen · Phone"}</span><input id="ph" type="tel" inputmode="tel" autocomplete="${TEL?"off":"tel"}" value="${esc(cust.phone)}" maxlength="30"></label>
   <label class="f">Hinweis <span>· optional</span><input id="nt" maxlength="200" placeholder="z. B. Allergie"></label>
