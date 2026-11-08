@@ -263,22 +263,33 @@ const itemOut=(it,c)=>it.half?false:it.v?it.v.every(([l])=>isOut(it.n+" "+l)):is
 async function loadConfig(){try{CFG=await server("getConfig");renderOpen();renderCats();if(sheetMode)render()}catch(e){}}
 
 // ---------- Öffnungszeiten / Abholzeiten ----------
+// Ender 08.11.: Kunden können immer bestellen, Abholzeit aber nur in den Öffnungszeiten (heute oder nächster offener Tag)
+const WD=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+const sameDay=(a,b)=>a.toDateString()===b.toDateString();
+function dayLabel(d){const t=new Date(),tm=new Date(t);tm.setDate(t.getDate()+1);
+  return sameDay(d,t)?"heute":sameDay(d,tm)?"morgen":WD[d.getDay()]+" "+pad(d.getDate())+"."+pad(d.getMonth()+1)+".";}
+const when=d=>(sameDay(d,new Date())?"":dayLabel(d).replace(/^./,c=>c.toUpperCase())+" ")+hm(d);
 function slots(){
-  const now=new Date(),h=hoursFor(now),mid=new Date(now);mid.setHours(0,0,0,0);
-  const at=m=>new Date(mid.getTime()+m*60000);
-  const earliest=Math.max(h[0],Math.ceil((now-mid)/60000)+20), last=h[1]-10;
-  const out=[];
-  if(earliest>last)return out;
-  out.push(at(earliest));
-  for(let m=Math.ceil((earliest+5)/15)*15;m<=last;m+=15)out.push(at(m));
-  return out;
+  const now=new Date();
+  for(let i=0;i<7;i++){
+    const day=new Date(now);day.setDate(now.getDate()+i);
+    const h=hoursFor(day),mid=new Date(day);mid.setHours(0,0,0,0);
+    const at=m=>new Date(mid.getTime()+m*60000);
+    const earliest=i===0?Math.max(h[0],Math.ceil((now-mid)/60000)+20):h[0], last=h[1]-10;
+    if(earliest>last)continue;
+    const out=[at(earliest)];
+    for(let m=Math.ceil((earliest+5)/15)*15;m<=last;m+=15)out.push(at(m));
+    return out;
+  }
+  return [];
 }
 function renderOpen(){
   const now=new Date(),h=hoursFor(now),m=now.getHours()*60+now.getMinutes(),s=slots();
   const e=$("openState");
   if(CFG.paused&&!TEL){e.className="open no";e.textContent="Online-Bestellung gerade pausiert · Bitte anrufen: 0711 44038178";return false}
   if(m>=h[0]&&m<h[1]-10){e.className="open yes";e.textContent="Jetzt geöffnet · Abholung in ca. 20 Minuten · Open now";}
-  else if(s.length){e.className="open yes";e.textContent="Noch geschlossen · Vorbestellen ab "+hm(s[0])+" Uhr möglich · Pre-order";}
+  else if(s.length&&sameDay(s[0],now)){e.className="open yes";e.textContent="Noch geschlossen · Vorbestellen ab "+hm(s[0])+" Uhr möglich · Pre-order";}
+  else if(s.length){e.className="open yes";e.textContent="Jetzt geschlossen · Du kannst schon für "+dayLabel(s[0])+" ab "+hm(s[0])+" Uhr vorbestellen · Pre-order";}
   else{e.className="open no";e.textContent="Heute geschlossen · Online-Bestellung wieder ab morgen · Closed today";}
   return s.length>0;
 }
@@ -397,7 +408,7 @@ function renderCart(){
     <span class="lprice">${eur(unit(l)*l.qty)}</span></div>
     ${l.cfg?`<div class="lh"><div class="lbon" style="flex:1">${bonLines(l).map(([c,t])=>`<span class="bl ${c}">${esc(t)}</span>`).join("")}</div><button class="ledit" data-edit="${i}">Ändern</button></div>`:""}</div>`).join(""):`<p class="note">Noch leer.</p>`}</div>
   <div class="total"><span>Summe</span><span>${eur(sum)}</span></div>
-  ${sl.length?`<label class="f">Abholzeit <span>· Pick-up time</span><select id="pk">${sl.map((d,i)=>`<option value="${d.toISOString()}" ${d.toISOString()===pickupSel?"selected":""}>${i===0?"So schnell wie möglich · ca. ":""}${hm(d)} Uhr</option>`).join("")}</select></label>`:`<p class="err">Heute ist keine Bestellung mehr möglich.</p>`}
+  ${sl.length?`<label class="f">Abholzeit <span>· Pick-up time</span><select id="pk">${sl.map((d,i)=>`<option value="${d.toISOString()}" ${d.toISOString()===pickupSel?"selected":""}>${sameDay(d,new Date())?(i===0?"So schnell wie möglich · ca. ":"")+hm(d):when(d)} Uhr</option>`).join("")}</select></label>`:`<p class="err">Heute ist keine Bestellung mehr möglich.</p>`}
   <label class="f">Name${TEL?" vom Anrufer":""}<input id="nm" autocomplete="${TEL?"off":"name"}" value="${esc(cust.name)}" maxlength="60"></label>
   <label class="f">Telefon <span>${TEL?"· optional":"· für Rückfragen · Phone"}</span><input id="ph" type="tel" inputmode="tel" autocomplete="${TEL?"off":"tel"}" value="${esc(cust.phone)}" maxlength="30"></label>
   <label class="f">Hinweis <span>· optional</span><input id="nt" maxlength="200" placeholder="z. B. Allergie"></label>
@@ -440,9 +451,9 @@ function renderDone(st,reason,removed,total){
   const o=LS.get(P+"last",null);if(!o){closeSheet();return}
   if(TEL){
     $("sheet").innerHTML=`<div class="done"><div>📞 An die Küche gesendet</div><div class="no">${o.no}</div>
-    <div style="font-size:20px">${esc(o.name||"")} · Abholung <b>${hm(new Date(o.pickup))} Uhr</b></div>
+    <div style="font-size:20px">${esc(o.name||"")} · Abholung <b>${when(new Date(o.pickup))} Uhr</b></div>
     <div>${eur(o.sum)} · ${o.pay==="karte"?"Karte":"Bar"}</div>
-    <p class="note">Dem Anrufer sagen: Nummer ${o.no}, abholen um ${hm(new Date(o.pickup))} Uhr.</p>
+    <p class="note">Dem Anrufer sagen: Nummer ${o.no}, abholen um ${when(new Date(o.pickup))} Uhr.</p>
     <button class="big" data-new>Nächste Telefon-Bestellung</button></div>`;
     return;
   }
@@ -454,7 +465,7 @@ function renderDone(st,reason,removed,total){
     return;
   }
   $("sheet").innerHTML=`<div class="done"><div>Danke für deine Bestellung! · Thank you!</div><div>Deine Nummer · Your number</div><div class="no">${o.no}</div>
-  <div style="font-size:20px">Abholung · Pick-up <b>${hm(new Date(o.pickup))} Uhr</b></div>
+  <div style="font-size:20px">Abholung · Pick-up <b>${when(new Date(o.pickup))} Uhr</b></div>
   <div class="st ${st==="fertig"?"fertig":""}">${ST[st||"neu"]||ST.neu}</div>
   ${removed&&removed.length?`<div style="background:var(--late-soft);color:var(--late);border-radius:10px;padding:10px 12px;font-weight:700">Leider aus, gestrichen · Not available: ${esc(removed.join(", "))}</div>`:""}
   <div>${eur(typeof total==="number"&&removed&&removed.length?total:o.sum)} · ${o.pay==="karte"?"Karte":"Bar"} bei Abholung</div>
