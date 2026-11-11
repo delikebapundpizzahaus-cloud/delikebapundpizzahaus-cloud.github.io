@@ -1,0 +1,20 @@
+{
+    "name":  "DELI KÃ¼che",
+    "short_name":  "DELI KÃ¼che",
+    "display":  "standalone",
+    "background_color":  "#b85a12",
+    "theme_color":  "#b85a12",
+    "icons":  [
+                  {
+                      "type":  "image/png",
+                      "sizes":  "192x192",
+                      "src":  "/icons/kueche-192.png"
+                  },
+                  {
+                      "purpose":  "any",
+                      "type":  "image/png",
+                      "sizes":  "512x512",
+                      "src":  "/icons/kueche-512.png"
+                  }
+              ]
+}
