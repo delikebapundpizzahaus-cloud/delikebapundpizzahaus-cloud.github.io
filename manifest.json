@@ -1,0 +1,22 @@
+{
+    "name":  "DELI Kebap Â· Online bestellen",
+    "short_name":  "DELI Bestellen",
+    "display":  "standalone",
+    "background_color":  "#c4361c",
+    "theme_color":  "#c4361c",
+    "icons":  [
+                  {
+                      "type":  "image/png",
+                      "sizes":  "192x192",
+                      "src":  "/icons/kunde-192.png"
+                  },
+                  {
+                      "purpose":  "any",
+                      "type":  "image/png",
+                      "sizes":  "512x512",
+                      "src":  "/icons/kunde-512.png"
+                  }
+              ],
+    "start_url":  "/",
+    "scope":  "/"
+}
