@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><script>window.DELI_API="https://script.google.com/macros/s/AKfycbw8h6RbL3cyvXoOIFztEQOfbBSB3BndKC71EQbp6shhCl18yr6h3wpDlS8mLthgotU/exec";window.DELI_TEL_URL="https://delikebapundpizzahaus-cloud.github.io/telefon-h3w8pz51vd/"</script><link rel="icon" type="image/png" sizes="32x32" href="/icons/kueche-32.png"><link rel="icon" type="image/png" sizes="192x192" href="/icons/kueche-192.png"><link rel="apple-touch-icon" href="/icons/kueche-apple-180.png"><meta name="apple-mobile-web-app-title" content="DELI KÃ¼che"><meta name="theme-color" content="#b85a12">
+<title>DELI Küche · Online-Bestellungen</title>
+<style>
+:root{--bg:#171412;--surface:#221e1b;--fg:#f1ebe6;--muted:#ab9f97;--line:#3a332e;--accent:#ff6a4d;--ok:#8ed19c;--ok-soft:#1e3123;--warn:#f0c065;--warn-soft:#352a14;--late:#ff8a80;--late-soft:#3d1f1c;--paper:#fffdf6;--ink:#1d1a18}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:12px 16px 40px}
+button{font:inherit;color:inherit;cursor:pointer}
+h1{margin:0;font:700 26px "Arial Narrow",Arial,sans-serif}
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.top .sp{flex:1}
+.st{font-size:13px;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-weight:700}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#1d0b06}
+.btn.tel{background:#1f5fd1;border-color:#1f5fd1;color:#fff;text-decoration:none}
+.telp{display:inline-block;background:#1f5fd1;color:#fff;border-radius:999px;padding:2px 8px;font:800 12px system-ui,sans-serif;margin-left:6px;vertical-align:middle}
+.btn.red{background:var(--late-soft);border-color:var(--late);color:var(--late)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;display:grid;gap:8px}
+.panel b{font-size:14px}
+.outs{display:flex;gap:8px;flex-wrap:wrap}
+.outs button{border:2px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 12px;font-weight:700}
+.outs button[aria-pressed="true"]{border-color:var(--late);background:var(--late-soft);color:var(--late)}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+@media (max-width:1000px){.cols{grid-template-columns:minmax(0,1fr)}}
+.col h2{margin:0 0 8px;font:700 22px "Arial Narrow",Arial,sans-serif;display:flex;gap:8px;align-items:center}
+.col h2 .n{background:var(--line);border-radius:999px;padding:0 10px;font-size:18px}
+.tk{background:var(--paper);color:var(--ink);border-radius:6px;padding:12px;margin-bottom:10px;display:grid;gap:8px;border-left:8px solid #999;font-family:ui-monospace,Consolas,monospace;font-size:15px}
+.tk.new{border-left-color:#c4361c;animation:flash 1s ease-in-out 6}
+.tk.work{border-left-color:#9a5b00}
+.tk.ready{border-left-color:#2e6b3c}
+.tk.late{box-shadow:0 0 0 3px #b3261e inset}
+@keyframes flash{50%{background:#ffd9cf}}
+.th{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.no{font:700 34px "Arial Narrow",Arial,sans-serif;line-height:1}
+.time{text-align:right}
+.time b{display:block;font:700 28px "Arial Narrow",Arial,sans-serif;line-height:1}
+.pill{display:inline-block;font:700 12px system-ui,sans-serif;border-radius:999px;padding:2px 8px;background:#e8e4df}
+.pill.late{background:#f9dedb;color:#b3261e}.pill.soon{background:#f8ebd2;color:#9a5b00}
+.who{font-family:system-ui,sans-serif}
+.lines{border-top:1px dashed #ccc;border-bottom:1px dashed #ccc;padding:6px 0;display:grid;gap:6px}
+.ln b{font-size:16px}
+.bl{display:block;font-weight:800;font-size:16px}
+/* Kräftige Schriftfarben, damit Mitarbeiter auf einen Blick sehen: grün = mit allem, rot = Soße, blau = ohne/nur */
+.bl.all{color:#00a32e}.bl.sa{color:#e00000}.bl.no{color:#0047d4}.bl.nur{color:#0047d4}.bl.ex{color:#1d1a18}
+.ln{position:relative}
+.rm{float:right;border:1px solid #b3261e;background:#fff;color:#b3261e;border-radius:8px;padding:6px 10px;font:700 13px system-ui,sans-serif}
+.rm.armed{background:#b3261e;color:#fff}
+.ln.gone b{text-decoration:line-through;color:#999}
+.gtag{font:800 12px system-ui,sans-serif;color:#b3261e}
+.nt{color:#9a5b00;font-family:system-ui,sans-serif;font-weight:700}
+.ft{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-family:system-ui,sans-serif}
+.acts{display:flex;gap:6px;flex-wrap:wrap;font-family:system-ui,sans-serif}
+.acts button{border:1px solid #bbb;background:#fff;color:#1d1a18;border-radius:8px;padding:10px 14px;font-weight:700}
+.acts button.main{background:#1d1a18;color:#fff;border-color:#1d1a18;font-size:17px}
+.acts button.cx{border-color:#b3261e;color:#b3261e}
+.empty{color:var(--muted)}
+.dlg-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px}
+.dlg{background:var(--surface);border-radius:14px;padding:16px;max-width:460px;width:100%;display:grid;gap:10px}
+.dlg h3{margin:0;font-size:20px}
+.dlg .rs{display:grid;gap:8px}
+.dlg .rs button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:12px;text-align:left;font-weight:700}
+.dlg input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+[hidden]{display:none!important}
+</style></head><body>
+<div class="top"><h1>DELI Küche · Online</h1><span class="st" id="sync">Verbinde …</span><span class="sp"></span>
+  <a class="btn tel" id="telBtn" target="_blank" rel="noopener">📞 Telefon-Bestellung</a>
+  <button class="btn" id="sound">🔇 Ton einschalten</button>
+  <button class="btn" id="kind">🎵 Ton: Klingel</button>
+  <button class="btn" id="pause">Online-Bestellung pausieren</button>
+  <button class="btn" id="showDone">Abgeholt anzeigen</button></div>
+<div class="panel"><b>Ist aus? Antippen = Kunden können es nicht mehr bestellen (rot = aus)</b><div class="outs" id="outs"></div></div>
+<div class="cols">
+  <section class="col"><h2>Neu <span class="n" id="nNew">0</span></h2><div id="cNew"></div></section>
+  <section class="col"><h2>In Arbeit <span class="n" id="nWork">0</span></h2><div id="cWork"></div></section>
+  <section class="col"><h2>Fertig <span class="n" id="nReady">0</span></h2><div id="cReady"></div></section>
+</div>
+<section class="col" id="doneCol" hidden style="margin-top:12px"><h2>Abgeholt / Storniert</h2><div id="cDone"></div></section>
+<div class="dlg-bg" id="dlg" hidden><div class="dlg">
+  <h3 id="dlgT">Bestellung stornieren</h3>
+  <div class="rs" id="reasons"></div>
+  <input id="ownReason" placeholder="Anderer Grund (optional)" maxlength="120">
+  <div class="acts"><button class="cx" id="dlgOk">Stornieren</button><button id="dlgNo">Abbrechen</button></div>
+</div></div>
+<script>
+const KEY=(function(){try{return "<?= key ?>"}catch(e){return ""}})().replace(/^<\?.*\?>$/,"")||new URLSearchParams(location.search).get("k")||"test";
+const APPURL=window.DELI_TEL_URL||(function(){try{return "<?= url ?>"}catch(e){return ""}})().replace(/^<\?.*\?>$/,"")||"Kunde.html";
+document.getElementById("telBtn").href=APPURL+"?tel=1&k="+encodeURIComponent(KEY);
+const ING=["Salat","Tomate","Zwiebel","Rotkraut","Weißkraut","Rucola","Petersilie","Gurke"];
+function bonLines(l){
+  const out=[];
+  if(l.cfg){const s=l.sauces||[];if(s.includes("Ohne Soße"))out.push(["no","OHNE SOSSE"]);else out.push(["sa","SOSSE: "+(s.length?s.join(", ").toUpperCase():"KEINE")])}
+  if(l.cfg==="full"){const ohne=l.ohne||[],have=ING.filter(x=>!ohne.includes(x));
+    if(!ohne.length)out.push(["all","MIT ALLEM"]);else if(!have.length)out.push(["no","KEINE ZUTATEN"]);
+    else if(ohne.length<=have.length){out.push(["all","MIT ALLEM"]);out.push(["no","OHNE "+ohne.join(", ").toUpperCase()])}
+    else out.push(["nur","NUR "+have.join(", ").toUpperCase()]);}
+  if(l.extras&&l.extras.length)out.push(["ex","EXTRA: "+l.extras.join(", ").toUpperCase()]);
+  if(l.cups&&l.cups.length)out.push(["ex","SOSSE IM BECHER: "+l.cups.join(", ").toUpperCase()]);
+  return out;
+}
+const $=id=>document.getElementById(id);
+const eur=n=>Number(n).toFixed(2).replace(".",",")+" €";
+const pad=n=>String(n).padStart(2,"0");
+const hm=d=>pad(d.getHours())+":"+pad(d.getMinutes());
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function server(fn,...a){return new Promise((res,rej)=>{
+  if(window.google&&google.script&&google.script.run){google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](...a);return}
+  if(window.DELI_API){fetch(window.DELI_API,{method:"POST",credentials:"omit",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn,args:a})})
+    .then(r=>r.json()).then(d=>d&&d.ok?res(d.r):rej(new Error((d&&d.e)||"Fehler"))).catch(()=>rej(new Error("Keine Verbindung")));return}
+  setTimeout(()=>{try{res(LOCAL[fn](...a))}catch(e){rej(e)}},200)})}
+const OUTDEF={"Scheibenfleisch":"Scheibe","Hähnchen":"Hähnchen","Hackfleisch":"Hack","Falafel":"Falafel","Pommes":"Pommes","Lahmacun":"Lahmacun","Pide":"Pide","Pizza":"Pizza","Seele":"Seele","Nuggets":"Nuggets"};
+const LOCAL={
+  listOrders(){return LS.get("t_orders",[])},
+  setStatus(k,id,st,r){const a=LS.get("t_orders",[]);const o=a.find(x=>x.id===id);if(o){o.status=st;o.reason=st==="storniert"?r||"":""}LS.set("t_orders",a);return true},
+  removeLine(k,id,i){const a=LS.get("t_orders",[]);const o=a.find(x=>x.id===id);if(o&&o.lines[i]){o.lines[i].removed=true;o.total=o.lines.filter(l=>!l.removed).reduce((s,l)=>s+((l.price||0)+(l.add||0))*l.qty,0);if(o.lines.every(l=>l.removed)){o.status="storniert";o.reason="Alle Artikel sind leider aus"}}LS.set("t_orders",a);return true},
+  getConfig(){return LS.get("t_cfg",{soldOut:[],paused:false,out:OUTDEF})},
+  setSoldOut(k,l){const c=LOCAL.getConfig();c.soldOut=l;LS.set("t_cfg",c);return c},
+  setPaused(k,p){const c=LOCAL.getConfig();c.paused=p;LS.set("t_cfg",c);return c}
+};
+let paused=0;
+let orders=[],cfg={soldOut:[],paused:false,out:OUTDEF},seen=new Set(LS.get("k_seen",[])),soundOn=false,showDone=false,first=true,actx=null;
+// Ton laut, wird alle 5 Sek. wiederholt, solange eine Bestellung "Neu" ist. 3 Töne zur Auswahl (Knopf "Ton: …" wechselt + spielt vor)
+const SOUNDS=["Klingel","Schlicht","Glocke","Piepen"];
+let soundKind=SOUNDS.includes(LS.get("k_sound2",""))?LS.get("k_sound2",""):"Klingel",comp=null,announced=new Set();
+function tone(f,start,len,type,vol){const o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.value=f;o.connect(g);g.connect(comp);
+  g.gain.setValueAtTime(0.0001,start);g.gain.exponentialRampToValueAtTime(vol,start+.01);g.gain.exponentialRampToValueAtTime(.0001,start+len);o.start(start);o.stop(start+len+.05)}
+function playSound(kind){if(!actx)return;if(actx.state==="suspended")actx.resume();
+  if(!comp){comp=actx.createDynamicsCompressor();comp.threshold.value=-20;comp.ratio.value=4;const m=actx.createGain();m.gain.value=2.5;comp.connect(m);m.connect(actx.destination)}
+  const t=actx.currentTime+.02;
+  if(kind==="Klingel"){[[0,659.3],[.55,523.3],[1.3,659.3],[1.85,523.3]].forEach(([d,f])=>{tone(f,t+d,1.1,"sine",1);tone(f*2,t+d,.6,"sine",.35);tone(f*3,t+d,.3,"triangle",.2)})}
+  else if(kind==="Glocke"){[0,1.1].forEach(d=>[[1,1],[2.76,.5],[5.4,.25],[8.93,.12]].forEach(([r,v])=>tone(784*r,t+d,1.6/r+.3,"sine",v)))}
+  else if(kind==="Piepen"){[0,.25,.5].forEach(d=>tone(880,t+d,.2,"sine",1))}
+  else{[0,.7].forEach(d=>tone(880,t+d,.6,"sine",1))}}
+function beep(){if(soundOn)playSound(soundKind)}
+setInterval(()=>{if(soundOn&&orders.some(o=>o.status==="neu"))beep()},5000);
+$("sound").onclick=()=>{soundOn=!soundOn;if(soundOn&&!actx)actx=new (window.AudioContext||window.webkitAudioContext)();$("sound").textContent=soundOn?"🔔 Ton an":"🔇 Ton einschalten";$("sound").classList.toggle("on",soundOn);if(soundOn)beep()};
+$("kind").textContent="🎵 Ton: "+soundKind;
+$("kind").onclick=()=>{soundKind=SOUNDS[(SOUNDS.indexOf(soundKind)+1)%SOUNDS.length];LS.set("k_sound2",soundKind);$("kind").textContent="🎵 Ton: "+soundKind;
+  if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();playSound(soundKind)};
+$("showDone").onclick=()=>{showDone=!showDone;$("showDone").classList.toggle("on",showDone);render()};
+$("pause").onclick=async()=>{cfg=await server("setPaused",KEY,!cfg.paused);renderCfg()};
+function renderCfg(){
+  $("outs").innerHTML=Object.keys(cfg.out||OUTDEF).map(w=>`<button data-out="${esc(w)}" aria-pressed="${cfg.soldOut.includes(w)}">${cfg.soldOut.includes(w)?"✕ ":""}${esc(w)}</button>`).join("");
+  $("pause").textContent=cfg.paused?"⏸ PAUSIERT – wieder einschalten":"Online-Bestellung pausieren";$("pause").classList.toggle("red",cfg.paused);
+}
+$("outs").onclick=async e=>{const b=e.target.closest("[data-out]");if(!b)return;const w=b.dataset.out;
+  const l=cfg.soldOut.includes(w)?cfg.soldOut.filter(x=>x!==w):[...cfg.soldOut,w];cfg.soldOut=l;renderCfg();cfg=await server("setSoldOut",KEY,l);renderCfg()};
+function ticket(o){
+  const pk=new Date(o.pickup),mins=Math.round((pk-Date.now())/60000);
+  const cls=o.status==="neu"?"new":o.status==="in Arbeit"?"work":o.status==="fertig"?"ready":"";
+  const late=mins<0&&["neu","in Arbeit"].includes(o.status);
+  const pill=o.status==="storniert"?`<span class="pill late">storniert</span>`:o.status==="abgeholt"?`<span class="pill">abgeholt</span>`:late?`<span class="pill late">${-mins} Min drüber</span>`:mins<=10?`<span class="pill soon">in ${mins} Min</span>`:`<span class="pill">in ${mins} Min</span>`;
+  const next=o.status==="neu"?["in Arbeit","Annehmen · In Arbeit"]:o.status==="in Arbeit"?["fertig","Fertig"]:o.status==="fertig"?["abgeholt","Abgeholt + kassiert"]:null;
+  return `<article class="tk ${cls}${late?" late":""}${!seen.has(o.id)&&o.status==="neu"?" new":""}">
+  <div class="th"><div><div class="no">Nr. ${o.no}${o.src==="tel"?`<span class="telp">📞 TELEFON</span>`:""}</div><div class="who">${esc(o.name)}${o.phone?" · "+esc(o.phone):""}</div></div><div class="time"><b>${hm(pk)}</b>${pill}</div></div>
+  <div class="lines">${o.lines.map((l,i)=>l.removed?`<div class="ln gone"><b>${l.qty}× ${esc(l.name)}</b> <span class="gtag">GESTRICHEN</span></div>`:`<div class="ln">${["neu","in Arbeit","fertig"].includes(o.status)&&o.lines.length>1?`<button class="rm" data-rm="${o.id}" data-i="${i}">✕ streichen</button>`:""}<b>${l.qty}× ${esc(l.name)}</b>${bonLines(l).map(([c,t])=>`<span class="bl ${c}">${esc(t)}</span>`).join("")}</div>`).join("")}</div>
+  ${o.note?`<div class="nt">Hinweis: ${esc(o.note)}</div>`:""}
+  ${o.reason?`<div class="nt">Storno: ${esc(o.reason)}</div>`:""}
+  <div class="ft"><b>${eur(o.total)} · ${o.pay==="karte"?"KARTE":"BAR"} bei Abholung</b></div>
+  <div class="acts">${next?`<button class="main" data-id="${o.id}" data-to="${next[0]}">${next[1]}</button>`:""}
+    ${["neu","in Arbeit","fertig"].includes(o.status)?`<button class="cx" data-cx="${o.id}">Stornieren</button>`:""}
+    ${["abgeholt","storniert"].includes(o.status)?`<button data-id="${o.id}" data-to="neu">Zurückholen</button>`:""}</div></article>`;
+}
+function render(){
+  const by=s=>orders.filter(o=>o.status===s).sort((a,b)=>String(a.pickup).localeCompare(String(b.pickup)));
+  const put=(el,n,list,msg)=>{$(n).textContent=list.length;$(el).innerHTML=list.length?list.map(ticket).join(""):`<p class="empty">${msg}</p>`};
+  put("cNew","nNew",by("neu"),"Keine neuen Bestellungen.");
+  put("cWork","nWork",by("in Arbeit"),"—");
+  put("cReady","nReady",by("fertig"),"—");
+  $("doneCol").hidden=!showDone;
+  if(showDone){const d=orders.filter(o=>["abgeholt","storniert"].includes(o.status));$("cDone").innerHTML=d.length?d.map(ticket).join(""):`<p class="empty">—</p>`}
+}
+let armedRm=null;
+document.addEventListener("click",async e=>{
+  // Artikel streichen: 1. Tippen = "Wirklich?", 2. Tippen = gestrichen
+  const rm=e.target.closest("[data-rm]");
+  if(rm){
+    const k=rm.dataset.rm+"#"+rm.dataset.i;
+    if(armedRm!==k){armedRm=k;document.querySelectorAll(".rm.armed").forEach(x=>{x.classList.remove("armed");x.textContent="✕ streichen"});rm.classList.add("armed");rm.textContent="Wirklich streichen?";paused=Date.now();return}
+    armedRm=null;rm.disabled=true;rm.textContent="…";await server("removeLine",KEY,rm.dataset.rm,Number(rm.dataset.i));paused=0;load();return}
+  if(armedRm){armedRm=null;paused=0;render()}
+  const b=e.target.closest("[data-to]");
+  if(b){b.disabled=true;await server("setStatus",KEY,b.dataset.id,b.dataset.to,"");seen.add(b.dataset.id);LS.set("k_seen",[...seen]);load();return}
+  const c=e.target.closest("[data-cx]");if(c)openCancel(c.dataset.cx);
+});
+// Stornieren mit Grund (Kunde sieht den Grund sofort)
+let cxId=null,cxReason="";
+function openCancel(id){
+  cxId=id;cxReason="";const o=orders.find(x=>x.id===id);
+  $("dlgT").textContent="Nr. "+o.no+" stornieren – Grund für den Kunden:";
+  const rs=cfg.soldOut.map(w=>w+" ist leider aus").concat(["Scheibenfleisch ist leider aus","Hähnchen ist leider aus","Hackfleisch ist leider aus","Zu viel los, wir schaffen es nicht rechtzeitig"]);
+  $("reasons").innerHTML=[...new Set(rs)].map(r=>`<button data-r="${esc(r)}">${esc(r)}</button>`).join("");
+  $("ownReason").value="";$("dlg").hidden=false;
+}
+$("reasons").onclick=e=>{const b=e.target.closest("[data-r]");if(!b)return;cxReason=b.dataset.r;[...$("reasons").children].forEach(x=>x.style.outline=x===b?"3px solid var(--accent)":"")};
+$("dlgNo").onclick=()=>{$("dlg").hidden=true};
+$("dlgOk").onclick=async()=>{const r=$("ownReason").value.trim()||cxReason;$("dlg").hidden=true;await server("setStatus",KEY,cxId,"storniert",r);load()};
+async function load(){
+  try{
+    const [o,c]=await Promise.all([server("listOrders",KEY),server("getConfig")]);
+    const fresh=o.filter(x=>x.status==="neu"&&!announced.has(x.id));
+    fresh.forEach(x=>announced.add(x.id));
+    if(fresh.length&&!first)beep();
+    first=false;orders=o;cfg=c;renderCfg();
+    if(paused&&Date.now()-paused<8000){}else{if(armedRm){armedRm=null}paused=0;render()}
+    $("sync").textContent="Live · zuletzt "+hm(new Date());
+  }catch(e){$("sync").textContent="Keine Verbindung – versuche weiter …"}
+}
+load();setInterval(load,5000);
+</script>
+</body></html>
