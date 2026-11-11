@@ -1,0 +1,22 @@
+{
+    "name":  "DELI Einkauf",
+    "short_name":  "DELI Einkauf",
+    "display":  "standalone",
+    "background_color":  "#2e6b3c",
+    "theme_color":  "#2e6b3c",
+    "icons":  [
+                  {
+                      "type":  "image/png",
+                      "sizes":  "192x192",
+                      "src":  "/icons/einkauf-192.png"
+                  },
+                  {
+                      "purpose":  "any",
+                      "type":  "image/png",
+                      "sizes":  "512x512",
+                      "src":  "/icons/einkauf-512.png"
+                  }
+              ],
+    "start_url":  "./",
+    "scope":  "./"
+}
