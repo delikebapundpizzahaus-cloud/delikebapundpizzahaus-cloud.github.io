@@ -1,0 +1,20 @@
+{
+    "name":  "DELI Telefon-Bestellung",
+    "short_name":  "DELI Telefon",
+    "display":  "standalone",
+    "background_color":  "#1f5fd1",
+    "theme_color":  "#1f5fd1",
+    "icons":  [
+                  {
+                      "type":  "image/png",
+                      "sizes":  "192x192",
+                      "src":  "/icons/telefon-192.png"
+                  },
+                  {
+                      "purpose":  "any",
+                      "type":  "image/png",
+                      "sizes":  "512x512",
+                      "src":  "/icons/telefon-512.png"
+                  }
+              ]
+}
