@@ -47,7 +47,7 @@ h1{margin:0;font:700 26px "Arial Narrow",Arial,sans-serif}
 .rm.armed{background:#b3261e;color:#fff}
 .ln.gone b{text-decoration:line-through;color:#999}
 .gtag{font:800 12px system-ui,sans-serif;color:#b3261e}
-.nt{color:#9a5b00;font-family:system-ui,sans-serif;font-weight:700}.liefp{display:inline-block;background:#0a7a3a;color:#fff;border-radius:999px;padding:2px 8px;font:800 12px system-ui,sans-serif;margin-left:6px;vertical-align:middle}.adr{background:#e7f6ec;color:#0a5a2b;border-radius:8px;padding:8px 10px;font:800 17px system-ui,sans-serif;margin:6px 0}
+.nt{color:#9a5b00;font-family:system-ui,sans-serif;font-weight:700}#bonPrint{display:none}@media print{@page{size:80mm auto;margin:3mm}body>*{display:none!important}#bonPrint{display:block!important;width:72mm;font:13px/1.3 monospace;color:#000}#bonPrint .big{font-size:22px;font-weight:800}#bonPrint hr{border:0;border-top:1px dashed #000}}.liefp{display:inline-block;background:#0a7a3a;color:#fff;border-radius:999px;padding:2px 8px;font:800 12px system-ui,sans-serif;margin-left:6px;vertical-align:middle}.adr{background:#e7f6ec;color:#0a5a2b;border-radius:8px;padding:8px 10px;font:800 17px system-ui,sans-serif;margin:6px 0}
 .ft{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-family:system-ui,sans-serif}
 .acts{display:flex;gap:6px;flex-wrap:wrap;font-family:system-ui,sans-serif}
 .acts button{border:1px solid #bbb;background:#fff;color:#1d1a18;border-radius:8px;padding:10px 14px;font-weight:700}
@@ -145,6 +145,40 @@ function renderCfg(){
 }
 $("outs").onclick=async e=>{const b=e.target.closest("[data-out]");if(!b)return;const w=b.dataset.out;
   const l=cfg.soldOut.includes(w)?cfg.soldOut.filter(x=>x!==w):[...cfg.soldOut,w];cfg.soldOut=l;renderCfg();cfg=await server("setSoldOut",KEY,l);renderCfg()};
+// 13.11. Bon drucken: Tablet (Android) -> Epson-App "TM Print Assistant" -> TM-m30II; sonst normaler Druck (80 mm)
+function bonText(o){
+  const pk=new Date(o.pickup),L=[];
+  L.push(["big","Nr. "+o.no+(o.mode==="liefer"?"  LIEFERUNG":"  ABHOLUNG")]);
+  L.push(["b",(o.mode==="liefer"?"Lieferung ca. ":"Abholung ")+hm(pk)+" Uhr"+(o.src==="tel"?"  (Telefon)":"")]);
+  L.push(["",o.name+(o.phone?"  Tel. "+o.phone:"")]);
+  if(o.mode==="liefer")L.push(["big",o.address+", Echterdingen"]);
+  L.push(["hr",""]);
+  o.lines.filter(l=>!l.removed).forEach(l=>{L.push(["b",l.qty+"x "+l.name+"   "+eur(((Number(l.price)||0)+(Number(l.add)||0))*l.qty)]);bonLines(l).forEach(([c,t])=>L.push(["","   "+t]))});
+  L.push(["hr",""]);
+  if(o.note)L.push(["b","HINWEIS: "+o.note]);
+  if(o.fee)L.push(["","Liefergebühr "+eur(o.fee)]);
+  L.push(["big","SUMME "+eur(o.total)]);
+  L.push(["b",(o.pay==="karte"?"KARTE":"BAR")+(o.mode==="liefer"?" bei Lieferung":" bei Abholung")]);
+  return L;
+}
+const xe=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function bonXML(o){
+  let x='<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"><text lang="de"/><text smooth="true"/>';
+  bonText(o).forEach(([k,t])=>{
+    if(k==="hr"){x+='<text dw="false" dh="false" em="false">------------------------------------------&#10;</text>';return}
+    x+=k==="big"?'<text dw="true" dh="true" em="true"/>':k==="b"?'<text dw="false" dh="false" em="true"/>':'<text dw="false" dh="false" em="false"/>';
+    x+='<text>'+xe(t)+'&#10;</text>'});
+  return x+'<feed line="3"/><cut type="feed"/></epos-print>';
+}
+function printBon(id){
+  const o=orders.find(x=>x.id===id);if(!o)return;
+  if(/Android/i.test(navigator.userAgent)){
+    location.href="tmprintassistant://tmprintassistant.epson.com/print?ver=1&data-type=eposprintxml&reselect=no&cut=feed&fit-to-width=yes&paper-width=80&data="+encodeURIComponent(bonXML(o));
+    return}
+  let el=$("bonPrint");if(!el){el=document.createElement("div");el.id="bonPrint";document.body.appendChild(el)}
+  el.innerHTML=bonText(o).map(([k,t])=>k==="hr"?"<hr>":`<div class="${k==="big"?"big":""}" style="${k==="b"?"font-weight:700":""}">${esc(t)}</div>`).join("");
+  window.print();
+}
 function ticket(o){
   const pk=new Date(o.pickup),mins=Math.round((pk-Date.now())/60000);
   const cls=o.status==="neu"?"new":o.status==="in Arbeit"?"work":o.status==="fertig"?"ready":"";
@@ -160,6 +194,7 @@ function ticket(o){
   <div class="ft"><b>${eur(o.total)}${o.fee?` (inkl. ${eur(o.fee)} Liefergebühr)`:""} · ${o.pay==="karte"?"KARTE":"BAR"} ${o.mode==="liefer"?"bei Lieferung":"bei Abholung"}</b></div>
   <div class="acts">${next?`<button class="main" data-id="${o.id}" data-to="${next[0]}">${next[1]}</button>`:""}
     ${["neu","in Arbeit","fertig"].includes(o.status)?`<button class="cx" data-cx="${o.id}">Stornieren</button>`:""}
+    ${o.status!=="storniert"?`<button data-print="${o.id}">🖨 Bon drucken</button>`:""}
     ${["abgeholt","storniert"].includes(o.status)?`<button data-id="${o.id}" data-to="neu">Zurückholen</button>`:""}</div></article>`;
 }
 function render(){
@@ -182,6 +217,7 @@ document.addEventListener("click",async e=>{
   if(armedRm){armedRm=null;paused=0;render()}
   const b=e.target.closest("[data-to]");
   if(b){b.disabled=true;await server("setStatus",KEY,b.dataset.id,b.dataset.to,"");seen.add(b.dataset.id);LS.set("k_seen",[...seen]);load();return}
+  const pr=e.target.closest("[data-print]");if(pr){printBon(pr.dataset.print);return}
   const c=e.target.closest("[data-cx]");if(c)openCancel(c.dataset.cx);
 });
 // Stornieren mit Grund (Kunde sieht den Grund sofort)
