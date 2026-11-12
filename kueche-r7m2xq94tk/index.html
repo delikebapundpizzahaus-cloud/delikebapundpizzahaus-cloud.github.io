@@ -47,7 +47,7 @@ h1{margin:0;font:700 26px "Arial Narrow",Arial,sans-serif}
 .rm.armed{background:#b3261e;color:#fff}
 .ln.gone b{text-decoration:line-through;color:#999}
 .gtag{font:800 12px system-ui,sans-serif;color:#b3261e}
-.nt{color:#9a5b00;font-family:system-ui,sans-serif;font-weight:700}
+.nt{color:#9a5b00;font-family:system-ui,sans-serif;font-weight:700}.liefp{display:inline-block;background:#0a7a3a;color:#fff;border-radius:999px;padding:2px 8px;font:800 12px system-ui,sans-serif;margin-left:6px;vertical-align:middle}.adr{background:#e7f6ec;color:#0a5a2b;border-radius:8px;padding:8px 10px;font:800 17px system-ui,sans-serif;margin:6px 0}
 .ft{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-family:system-ui,sans-serif}
 .acts{display:flex;gap:6px;flex-wrap:wrap;font-family:system-ui,sans-serif}
 .acts button{border:1px solid #bbb;background:#fff;color:#1d1a18;border-radius:8px;padding:10px 14px;font-weight:700}
@@ -150,13 +150,14 @@ function ticket(o){
   const cls=o.status==="neu"?"new":o.status==="in Arbeit"?"work":o.status==="fertig"?"ready":"";
   const late=mins<0&&["neu","in Arbeit"].includes(o.status);
   const pill=o.status==="storniert"?`<span class="pill late">storniert</span>`:o.status==="abgeholt"?`<span class="pill">abgeholt</span>`:late?`<span class="pill late">${-mins} Min drüber</span>`:mins<=10?`<span class="pill soon">in ${mins} Min</span>`:`<span class="pill">in ${mins} Min</span>`;
-  const next=o.status==="neu"?["in Arbeit","Annehmen · In Arbeit"]:o.status==="in Arbeit"?["fertig","Fertig"]:o.status==="fertig"?["abgeholt","Abgeholt + kassiert"]:null;
+  const next=o.status==="neu"?["in Arbeit","Annehmen · In Arbeit"]:o.status==="in Arbeit"?["fertig","Fertig"]:o.status==="fertig"?["abgeholt",o.mode==="liefer"?"Geliefert + kassiert":"Abgeholt + kassiert"]:null;
   return `<article class="tk ${cls}${late?" late":""}${!seen.has(o.id)&&o.status==="neu"?" new":""}">
-  <div class="th"><div><div class="no">Nr. ${o.no}${o.src==="tel"?`<span class="telp">📞 TELEFON</span>`:""}</div><div class="who">${esc(o.name)}${o.phone?" · "+esc(o.phone):""}</div></div><div class="time"><b>${hm(pk)}</b>${pill}</div></div>
+  <div class="th"><div><div class="no">Nr. ${o.no}${o.src==="tel"?`<span class="telp">📞 TELEFON</span>`:""}${o.mode==="liefer"?`<span class="liefp">🚗 LIEFERUNG</span>`:""}</div><div class="who">${esc(o.name)}${o.phone?" · "+esc(o.phone):""}</div></div><div class="time"><b>${hm(pk)}</b>${pill}</div></div>
   <div class="lines">${o.lines.map((l,i)=>l.removed?`<div class="ln gone"><b>${l.qty}× ${esc(l.name)}</b> <span class="gtag">GESTRICHEN</span></div>`:`<div class="ln">${["neu","in Arbeit","fertig"].includes(o.status)&&o.lines.length>1?`<button class="rm" data-rm="${o.id}" data-i="${i}">✕ streichen</button>`:""}<b>${l.qty}× ${esc(l.name)}</b>${bonLines(l).map(([c,t])=>`<span class="bl ${c}">${esc(t)}</span>`).join("")}</div>`).join("")}</div>
+  ${o.mode==="liefer"?`<div class="adr">🚗 ${esc(o.address)}, Echterdingen</div>`:""}
   ${o.note?`<div class="nt">Hinweis: ${esc(o.note)}</div>`:""}
   ${o.reason?`<div class="nt">Storno: ${esc(o.reason)}</div>`:""}
-  <div class="ft"><b>${eur(o.total)} · ${o.pay==="karte"?"KARTE":"BAR"} bei Abholung</b></div>
+  <div class="ft"><b>${eur(o.total)}${o.fee?` (inkl. ${eur(o.fee)} Liefergebühr)`:""} · ${o.pay==="karte"?"KARTE":"BAR"} ${o.mode==="liefer"?"bei Lieferung":"bei Abholung"}</b></div>
   <div class="acts">${next?`<button class="main" data-id="${o.id}" data-to="${next[0]}">${next[1]}</button>`:""}
     ${["neu","in Arbeit","fertig"].includes(o.status)?`<button class="cx" data-cx="${o.id}">Stornieren</button>`:""}
     ${["abgeholt","storniert"].includes(o.status)?`<button data-id="${o.id}" data-to="neu">Zurückholen</button>`:""}</div></article>`;
