@@ -236,6 +236,9 @@ const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){re
 // Telefon-Bestellung (vom Küchen-Tablet geöffnet, mit Küchen-Schlüssel)
 const TELK=(function(){try{return "<?= telk ?>"}catch(e){return ""}})().replace(/^<\?.*\?>$/,"")||(new URLSearchParams(location.search).get("tel")==="1"?(new URLSearchParams(location.search).get("k")||"test"):"");
 const TEL=!!TELK,P=TEL?"tel_":"deli_";
+// 13.11. Lieferung (Test): nur sichtbar mit ?lieferung=1 oder am Telefon. Nur Echterdingen, ab 25 €, bis 49,99 € 3 € Gebühr, ab 50 € gratis
+const LIEF=TEL||new URLSearchParams(location.search).get("lieferung")==="1";
+let dmode="abhol",addr=TEL?"":LS.get("deli_addr","");const isL=()=>LIEF&&dmode==="liefer";const feeOf=s=>isL()?(s>=50?0:3):0;
 // Ender 08.11.: Schüler nur im Laden/Telefon, nicht online
 if(!TEL){const si=MENU.findIndex(g=>g.c==="Schüler");if(si>=0)MENU.splice(si,1)}
 if(TEL){document.body.classList.add("tel");document.title="DELI Telefon-Bestellung";
@@ -251,7 +254,7 @@ function server(fn,...args){
   });
 }
 const LOCAL={
-  saveOrder(o){const all=LS.get("t_orders",[]);const no=all.length+1;const id="t"+Date.now();all.push({...o,tel:undefined,src:o.tel?"tel":"online",id,no,status:"neu",created:new Date().toISOString(),total:o.lines.reduce((s,l)=>s+(l.price+l.add)*l.qty,0)});LS.set("t_orders",all);return{id,no,pickup:o.pickup}},
+  saveOrder(o){const all=LS.get("t_orders",[]);const no=all.length+1;const id="t"+Date.now();all.push({...o,tel:undefined,src:o.tel?"tel":"online",id,no,status:"neu",created:new Date().toISOString(),total:(s=>s+(o.mode==="liefer"?(s>=50?0:3):0))(o.lines.reduce((s,l)=>s+(l.price+l.add)*l.qty,0))});LS.set("t_orders",all);return{id,no,pickup:o.pickup}},
   orderStatus(id){const o=LS.get("t_orders",[]).find(x=>x.id===id);return o?{status:o.status,no:o.no,pickup:o.pickup,reason:o.reason||""}:null},
   getConfig(){return LS.get("t_cfg",{soldOut:[],paused:false,out:{"Scheibenfleisch":"Scheibe","Hähnchen":"Hähnchen","Hackfleisch":"Hack","Falafel":"Falafel","Pommes":"Pommes","Lahmacun":"Lahmacun","Pide":"Pide","Pizza":"Pizza","Seele":"Seele","Nuggets":"Nuggets"}})}
 };
@@ -270,13 +273,13 @@ function dayLabel(d){const t=new Date(),tm=new Date(t);tm.setDate(t.getDate()+1)
   return sameDay(d,t)?"heute":sameDay(d,tm)?"morgen":WD[d.getDay()]+" "+pad(d.getDate())+"."+pad(d.getMonth()+1)+".";}
 const when=d=>(sameDay(d,new Date())?"":dayLabel(d).replace(/^./,c=>c.toUpperCase())+" ")+hm(d);
 // Abholtage wie bei SumUp: die nächsten 3 offenen Tage, jeweils nur Zeiten in den Öffnungszeiten
-function slotDays(n=3){
+function slotDays(n=3,lead=20,from=0){
   const now=new Date(),days=[];
   for(let i=0;i<8&&days.length<n;i++){
     const day=new Date(now);day.setDate(now.getDate()+i);
     const h=hoursFor(day),mid=new Date(day);mid.setHours(0,0,0,0);
     const at=m=>new Date(mid.getTime()+m*60000);
-    const earliest=i===0?Math.max(h[0],Math.ceil((now-mid)/60000)+20):h[0], last=h[1]-10;
+    const earliest=i===0?Math.max(h[0],Math.ceil((now-mid)/60000)+lead,from):Math.max(h[0],from), last=h[1]-10;
     if(earliest>last)continue;
     const out=[at(earliest)];
     for(let m=Math.ceil((earliest+5)/15)*15;m<=last;m+=15)out.push(at(m));
@@ -401,7 +404,7 @@ $("openCart").onclick=()=>openSheet("cart");
 // ---------- Warenkorb + Bestellen ----------
 let pickupSel="",cust=TEL?{name:"",phone:""}:LS.get("deli_cust",{name:"",phone:""}),sending=false,err="";
 function renderCart(){
-  const s=$("sheet"),sd=CFG.paused&&!TEL?[]:slotDays(3),sl=sd.flat(),sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0);
+  const s=$("sheet"),sd=CFG.paused&&!TEL?[]:slotDays(3,isL()?40:20,isL()?840:0),sl=sd.flat(),sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0),fee=feeOf(sum),low=isL()&&sum<25;
   const outs=cart.filter(l=>isOut(l.name+" "+(l.extras||[]).join(" ")));
   if(!sl.find(d=>d.toISOString()===pickupSel))pickupSel=sl[0]?sl[0].toISOString():"";
   s.innerHTML=`<div class="sh"><h2>Warenkorb · Cart</h2><button class="x" data-close aria-label="Schließen">✕</button></div>
@@ -410,16 +413,21 @@ function renderCart(){
     <span class="lprice">${eur(unit(l)*l.qty)}</span></div>
     ${l.cfg?`<div class="lh"><div class="lbon" style="flex:1">${bonLines(l).map(([c,t])=>`<span class="bl ${c}">${esc(t)}</span>`).join("")}</div><button class="ledit" data-edit="${i}">Ändern</button></div>`:""}</div>`).join(""):`<p class="note">Noch leer.</p>`}</div>
   <div class="total"><span>Summe</span><span>${eur(sum)}</span></div>
-  ${sl.length?`<label class="f">Abholzeit <span>· Pick-up time</span><select id="pk">${sd.map(g=>`<optgroup label="${(l=>l.replace(/^./,c=>c.toUpperCase())+(/^(heute|morgen)$/.test(l)?" · "+WD[g[0].getDay()]:""))(dayLabel(g[0]))}">${g.map((d,i)=>`<option value="${d.toISOString()}" ${d.toISOString()===pickupSel?"selected":""}>${sameDay(d,new Date())?(i===0?"So schnell wie möglich · ca. ":"")+hm(d):when(d)} Uhr</option>`).join("")}</optgroup>`).join("")}</select></label>`:`<p class="err">Gerade ist keine Bestellung möglich. Bitte anrufen: 0711 44038178</p>`}
+  ${LIEF?`<div class="chips"><button class="chip" data-dm="abhol" aria-pressed="${!isL()}">🏪 Abholung · Pick-up</button><button class="chip" data-dm="liefer" aria-pressed="${isL()}">🚗 Lieferung · Delivery</button></div>`:""}
+  ${isL()?`<div class="lief"><p class="note" style="margin:0">Wir liefern nur in <b>Echterdingen</b>. Lieferung ab 14 Uhr · ab 25 € · bis 49,99 € kostet sie 3 € · ab 50 € gratis.</p>
+    ${low?`<p class="err">Lieferung erst ab 25 € · noch ${eur(25-sum)} fehlen. Oder Abholung wählen.</p>`:`<div class="total" style="font-size:16px"><span>Liefergebühr</span><span>${fee?eur(fee):"gratis"}</span></div><div class="total"><span>Gesamt</span><span>${eur(sum+fee)}</span></div>`}
+    <label class="f">Straße und Hausnummer <span>· Street + no.</span><input id="ad" autocomplete="${TEL?"off":"street-address"}" value="${esc(addr)}" maxlength="80" placeholder="z. B. Hauptstraße 12"></label>
+    <p class="note" style="margin:0">70771 Leinfelden-Echterdingen · Ortsteil Echterdingen. Klingel/Etage bitte unten bei Hinweis.</p></div>`:""}
+  ${sl.length?`<label class="f">${isL()?"Lieferzeit <span>· Delivery time</span>":"Abholzeit <span>· Pick-up time</span>"}<select id="pk">${sd.map(g=>`<optgroup label="${(l=>l.replace(/^./,c=>c.toUpperCase())+(/^(heute|morgen)$/.test(l)?" · "+WD[g[0].getDay()]:""))(dayLabel(g[0]))}">${g.map((d,i)=>`<option value="${d.toISOString()}" ${d.toISOString()===pickupSel?"selected":""}>${sameDay(d,new Date())?(i===0?"So schnell wie möglich · ca. ":"")+hm(d):when(d)} Uhr</option>`).join("")}</optgroup>`).join("")}</select></label>`:`<p class="err">Gerade ist keine Bestellung möglich. Bitte anrufen: 0711 44038178</p>`}
   <label class="f">Name${TEL?" vom Anrufer":""}<input id="nm" autocomplete="${TEL?"off":"name"}" value="${esc(cust.name)}" maxlength="60"></label>
-  <label class="f">Telefon <span>${TEL?"· optional":"· für Rückfragen · Phone"}</span><input id="ph" type="tel" inputmode="tel" autocomplete="${TEL?"off":"tel"}" value="${esc(cust.phone)}" maxlength="30"></label>
+  <label class="f">Telefon <span>${isL()?"· für den Fahrer · Phone":TEL?"· optional":"· für Rückfragen · Phone"}</span><input id="ph" type="tel" inputmode="tel" autocomplete="${TEL?"off":"tel"}" value="${esc(cust.phone)}" maxlength="30"></label>
   <label class="f">Hinweis <span>· optional</span><input id="nt" maxlength="200" placeholder="z. B. Allergie"></label>
-  <div><div class="bt" style="margin-bottom:6px">Bezahlung im Laden <span>· Pay in the shop</span></div>
+  <div><div class="bt" style="margin-bottom:6px">${isL()?"Bezahlung an der Tür <span>· Pay at the door</span>":"Bezahlung im Laden <span>· Pay in the shop</span>"}</div>
   <div class="chips"><button class="chip" data-pay="bar" aria-pressed="${pay==="bar"}">💶 Bar · Cash</button><button class="chip" data-pay="karte" aria-pressed="${pay==="karte"}">💳 Karte · Card</button></div></div>
   ${outs.length?`<p class="err">Gerade aus: ${outs.map(l=>esc(l.name)).join(", ")}. Bitte entfernen oder ändern.</p>`:""}
   ${err?`<p class="err">${esc(err)}</p>`:""}
-  <button class="big" data-send ${!cart.length||!sl.length||sending||outs.length?"disabled":""}>${sending?"Wird gesendet …":(TEL?"📞 An Küche senden · ":"Jetzt bestellen · Order now · ")+eur(sum)}</button>
-  ${TEL?"":`<p class="note">Du bezahlst bei Abholung im Laden. Fragen: 0711 44038178</p>`}`;
+  <button class="big" data-send ${!cart.length||!sl.length||sending||outs.length||low?"disabled":""}>${sending?"Wird gesendet …":(TEL?"📞 An Küche senden · ":"Jetzt bestellen · Order now · ")+eur(sum+fee)}</button>
+  ${TEL?"":`<p class="note">${isL()?"Du bezahlst bei Lieferung an der Tür.":"Du bezahlst bei Abholung im Laden."} Fragen: 0711 44038178</p>`}`;
 }
 function onCart(e){
   let b;
@@ -427,22 +435,24 @@ function onCart(e){
   if(b=e.target.closest("[data-dec]")){const i=+b.dataset.dec;cart[i].qty--;if(cart[i].qty<1)cart.splice(i,1);saveCart();keep();renderCart();return}
   if(b=e.target.closest("[data-edit]")){keep();editIdx=+b.dataset.edit;const l=cart[editIdx];builder={name:l.name,price:l.price,cfg:l.cfg,ohne:[...(l.ohne||[])],sauces:[...(l.sauces||[])],extras:[...(l.extras||[])],cups:[...(l.cups||[])]};sheetMode="pick";renderPick();$("sheet").scrollTop=0;return}
   if(b=e.target.closest("[data-pay]")){keep();pay=b.dataset.pay;renderCart();return}
+  if(b=e.target.closest("[data-dm]")){keep();dmode=b.dataset.dm;pickupSel="";renderCart();return}
   if(e.target.closest("[data-send]"))send();
 }
 let noteDraft="";
-function keep(){const g=id=>$(id)?$(id).value:null;if(g("nm")!==null)cust.name=g("nm");if(g("ph")!==null)cust.phone=g("ph");if(g("nt")!==null)noteDraft=g("nt");if(g("pk"))pickupSel=g("pk")}
+function keep(){const g=id=>$(id)?$(id).value:null;if(g("nm")!==null)cust.name=g("nm");if(g("ph")!==null)cust.phone=g("ph");if(g("nt")!==null)noteDraft=g("nt");if(g("pk"))pickupSel=g("pk");if(g("ad")!==null)addr=g("ad")}
 async function send(){
   keep();err="";
   if(cust.name.trim().length<2)err="Bitte deinen Namen eingeben.";
-  else if(!TEL&&cust.phone.replace(/\D/g,"").length<6)err="Bitte deine Telefonnummer eingeben.";
+  else if((!TEL||isL())&&cust.phone.replace(/\D/g,"").length<6)err=isL()?"Für die Lieferung brauchen wir die Telefonnummer.":"Bitte deine Telefonnummer eingeben.";
+  else if(isL()&&(addr.trim().length<5||!/\d/.test(addr)))err="Bitte Straße und Hausnummer eingeben.";
   if(err){renderCart();$("nt").value=noteDraft;return}
-  if(!TEL)LS.set("deli_cust",cust);sending=true;renderCart();
+  if(!TEL){LS.set("deli_cust",cust);if(isL())LS.set("deli_addr",addr)}sending=true;renderCart();
   try{
-    const r=await server("saveOrder",{name:cust.name,phone:cust.phone,note:noteDraft,pay,pickup:pickupSel,tel:TELK,
+    const r=await server("saveOrder",{name:cust.name,phone:cust.phone,note:noteDraft,pay,pickup:pickupSel,tel:TELK,mode:isL()?"liefer":"abhol",address:isL()?addr.trim():"",
       lines:cart.map(l=>({name:l.name,price:l.price,add:l.add||0,qty:l.qty,cfg:l.cfg||null,ohne:l.ohne||[],sauces:l.sauces||[],extras:l.extras||[],cups:l.cups||[]}))});
-    const sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0);
-    LS.set(P+"last",{id:r.id,no:r.no,pickup:r.pickup,sum,pay,name:cust.name});
-    cart=[];saveCart();noteDraft="";sending=false;if(TEL){cust={name:"",phone:""};pay="bar"}showDone();
+    const sub=cart.reduce((a,l)=>a+unit(l)*l.qty,0),fee=feeOf(sub),sum=typeof r.total==="number"?r.total:sub+fee;
+    LS.set(P+"last",{id:r.id,no:r.no,pickup:r.pickup,sum,fee,pay,name:cust.name,mode:isL()?"liefer":"abhol",address:isL()?addr.trim():""});
+    cart=[];saveCart();noteDraft="";sending=false;if(TEL){cust={name:"",phone:""};pay="bar";addr="";dmode="abhol"}showDone();
   }catch(e2){sending=false;err=(e2&&e2.message)||"Senden hat nicht geklappt. Bitte nochmal tippen oder anrufen: 0711 44038178";renderCart()}
 }
 // ---------- Bestätigung ----------
@@ -453,9 +463,9 @@ function renderDone(st,reason,removed,total){
   const o=LS.get(P+"last",null);if(!o){closeSheet();return}
   if(TEL){
     $("sheet").innerHTML=`<div class="done"><div>📞 An die Küche gesendet</div><div class="no">${o.no}</div>
-    <div style="font-size:20px">${esc(o.name||"")} · Abholung <b>${when(new Date(o.pickup))} Uhr</b></div>
+    <div style="font-size:20px">${esc(o.name||"")} · ${o.mode==="liefer"?"🚗 Lieferung ca.":"Abholung"} <b>${when(new Date(o.pickup))} Uhr</b></div>${o.mode==="liefer"?`<div><b>${esc(o.address)}</b>, Echterdingen</div>`:""}
     <div>${eur(o.sum)} · ${o.pay==="karte"?"Karte":"Bar"}</div>
-    <p class="note">Dem Anrufer sagen: Nummer ${o.no}, abholen um ${when(new Date(o.pickup))} Uhr.</p>
+    <p class="note">Dem Anrufer sagen: Nummer ${o.no}, ${o.mode==="liefer"?"Lieferung ca. "+when(new Date(o.pickup))+" Uhr, "+eur(o.sum)+(o.fee?" inkl. "+eur(o.fee)+" Liefergebühr":""):"abholen um "+when(new Date(o.pickup))+" Uhr"}.</p>
     <button class="big" data-new>Nächste Telefon-Bestellung</button></div>`;
     return;
   }
@@ -467,10 +477,10 @@ function renderDone(st,reason,removed,total){
     return;
   }
   $("sheet").innerHTML=`<div class="done"><div>Danke für deine Bestellung! · Thank you!</div><div>Deine Nummer · Your number</div><div class="no">${o.no}</div>
-  <div style="font-size:20px">Abholung · Pick-up <b>${when(new Date(o.pickup))} Uhr</b></div>
+  <div style="font-size:20px">${o.mode==="liefer"?"🚗 Lieferung ca. · Delivery":"Abholung · Pick-up"} <b>${when(new Date(o.pickup))} Uhr</b></div>${o.mode==="liefer"?`<div><b>${esc(o.address)}</b>, Echterdingen</div>`:""}
   <div class="st ${st==="fertig"?"fertig":""}">${ST[st||"neu"]||ST.neu}</div>
   ${removed&&removed.length?`<div style="background:var(--late-soft);color:var(--late);border-radius:10px;padding:10px 12px;font-weight:700">Leider aus, gestrichen · Not available: ${esc(removed.join(", "))}</div>`:""}
-  <div>${eur(typeof total==="number"&&removed&&removed.length?total:o.sum)} · ${o.pay==="karte"?"Karte":"Bar"} bei Abholung</div>
+  <div>${eur(typeof total==="number"&&removed&&removed.length?total:o.sum)} · ${o.pay==="karte"?"Karte":"Bar"} ${o.mode==="liefer"?"bei Lieferung":"bei Abholung"}${o.fee?" · inkl. "+eur(o.fee)+" Liefergebühr":""}</div>
   <p class="note">Tübinger Str. 8, Echterdingen · 0711 44038178</p>
   <button class="big" data-new>Neue Bestellung · New order</button></div>`;
   clearTimeout(statusTimer);
