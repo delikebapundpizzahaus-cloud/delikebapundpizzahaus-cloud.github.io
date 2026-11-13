@@ -238,7 +238,9 @@ const TELK=(function(){try{return "<?= telk ?>"}catch(e){return ""}})().replace(
 const TEL=!!TELK,P=TEL?"tel_":"deli_";
 // 13.11. Lieferung: seit 13.11. nachts fuer alle (Ender "ja fuer alle"). Nur Echterdingen, ab 25 €, bis 49,99 € 3 € Gebühr, ab 50 € gratis
 const LIEF=true;
-let dmode="abhol",addr=TEL?"":LS.get("deli_addr","");const isL=()=>LIEF&&dmode==="liefer";const feeOf=s=>isL()?(s>=50?0:3):0;
+let dmode="abhol",addr=TEL?"":LS.get("deli_addr",""),ecOk=false;
+// Ender 13.11.: NUR Echterdingen. Andere Orte/PLZ werden abgelehnt (auch im Server)
+const NOT_ECHT=a=>{const s=a.toLowerCase().replace(/leinfelden-echterdingen/g,"");return /\b(leinfelden|stetten|musberg|oberaichen|unteraichen|filderstadt|bernhausen|stuttgart|plattenhardt|sielmingen|bonlanden|vaihingen|m(ö|oe)hringen|neuhausen|ostfildern|steinenbronn|waldenbuch)\b/.test(s)||(/\b\d{5}\b/.test(s)&&!/\b70771\b/.test(s))};const isL=()=>LIEF&&dmode==="liefer";const feeOf=s=>isL()?(s>=50?0:3):0;
 // Ender 08.11.: Schüler nur im Laden/Telefon, nicht online
 if(!TEL){const si=MENU.findIndex(g=>g.c==="Schüler");if(si>=0)MENU.splice(si,1)}
 if(TEL){document.body.classList.add("tel");document.title="DELI Telefon-Bestellung";
@@ -417,7 +419,8 @@ function renderCart(){
   ${isL()?`<div class="lief"><p class="note" style="margin:0">Wir liefern nur in <b>Echterdingen</b>. Lieferung ab 14 Uhr · ab 25 € · bis 49,99 € kostet sie 3 € · ab 50 € gratis.</p>
     ${low?`<p class="err">Lieferung erst ab 25 € · noch ${eur(25-sum)} fehlen. Oder Abholung wählen.</p>`:`<div class="total" style="font-size:16px"><span>Liefergebühr</span><span>${fee?eur(fee):"gratis"}</span></div><div class="total"><span>Gesamt</span><span>${eur(sum+fee)}</span></div>`}
     <label class="f">Straße und Hausnummer <span>· Street + no.</span><input id="ad" autocomplete="${TEL?"off":"street-address"}" value="${esc(addr)}" maxlength="80" placeholder="z. B. Hauptstraße 12"></label>
-    <p class="note" style="margin:0">70771 Leinfelden-Echterdingen · Ortsteil Echterdingen. Klingel/Etage bitte unten bei Hinweis.</p></div>`:""}
+    <p class="note" style="margin:0">70771 Leinfelden-Echterdingen · Ortsteil Echterdingen. Klingel/Etage bitte unten bei Hinweis.</p>
+    <label style="display:flex;gap:10px;align-items:center;font-weight:700;margin-top:4px"><input type="checkbox" id="ec" style="width:24px;height:24px" ${ecOk?"checked":""}> Meine Adresse ist in Echterdingen · Address is in Echterdingen</label></div>`:""}
   ${sl.length?`<label class="f">${isL()?"Lieferzeit <span>· Delivery time</span>":"Abholzeit <span>· Pick-up time</span>"}<select id="pk">${sd.map(g=>`<optgroup label="${(l=>l.replace(/^./,c=>c.toUpperCase())+(/^(heute|morgen)$/.test(l)?" · "+WD[g[0].getDay()]:""))(dayLabel(g[0]))}">${g.map((d,i)=>`<option value="${d.toISOString()}" ${d.toISOString()===pickupSel?"selected":""}>${sameDay(d,new Date())?(i===0?"So schnell wie möglich · ca. ":"")+hm(d):when(d)} Uhr</option>`).join("")}</optgroup>`).join("")}</select></label>`:`<p class="err">Gerade ist keine Bestellung möglich. Bitte anrufen: 0711 44038178</p>`}
   <label class="f">Name${TEL?" vom Anrufer":""}<input id="nm" autocomplete="${TEL?"off":"name"}" value="${esc(cust.name)}" maxlength="60"></label>
   <label class="f">Telefon <span>${isL()?"· für den Fahrer · Phone":TEL?"· optional":"· für Rückfragen · Phone"}</span><input id="ph" type="tel" inputmode="tel" autocomplete="${TEL?"off":"tel"}" value="${esc(cust.phone)}" maxlength="30"></label>
@@ -439,20 +442,21 @@ function onCart(e){
   if(e.target.closest("[data-send]"))send();
 }
 let noteDraft="";
-function keep(){const g=id=>$(id)?$(id).value:null;if(g("nm")!==null)cust.name=g("nm");if(g("ph")!==null)cust.phone=g("ph");if(g("nt")!==null)noteDraft=g("nt");if(g("pk"))pickupSel=g("pk");if(g("ad")!==null)addr=g("ad")}
+function keep(){const g=id=>$(id)?$(id).value:null;if(g("nm")!==null)cust.name=g("nm");if(g("ph")!==null)cust.phone=g("ph");if(g("nt")!==null)noteDraft=g("nt");if(g("pk"))pickupSel=g("pk");if(g("ad")!==null)addr=g("ad");if($("ec"))ecOk=$("ec").checked}
 async function send(){
   keep();err="";
   if(cust.name.trim().length<2)err="Bitte deinen Namen eingeben.";
   else if((!TEL||isL())&&cust.phone.replace(/\D/g,"").length<6)err=isL()?"Für die Lieferung brauchen wir die Telefonnummer.":"Bitte deine Telefonnummer eingeben.";
   else if(isL()&&(addr.trim().length<5||!/\d/.test(addr)))err="Bitte Straße und Hausnummer eingeben.";
+  else if(isL()&&(NOT_ECHT(addr)||!ecOk))err="Wir liefern nur in Echterdingen. Bitte Häkchen setzen oder Abholung wählen.";
   if(err){renderCart();$("nt").value=noteDraft;return}
   if(!TEL){LS.set("deli_cust",cust);if(isL())LS.set("deli_addr",addr)}sending=true;renderCart();
   try{
-    const r=await server("saveOrder",{name:cust.name,phone:cust.phone,note:noteDraft,pay,pickup:pickupSel,tel:TELK,mode:isL()?"liefer":"abhol",address:isL()?addr.trim():"",
+    const r=await server("saveOrder",{name:cust.name,phone:cust.phone,note:noteDraft,pay,pickup:pickupSel,tel:TELK,mode:isL()?"liefer":"abhol",address:isL()?addr.trim():"",inEcht:isL()?ecOk:false,
       lines:cart.map(l=>({name:l.name,price:l.price,add:l.add||0,qty:l.qty,cfg:l.cfg||null,ohne:l.ohne||[],sauces:l.sauces||[],extras:l.extras||[],cups:l.cups||[]}))});
     const sub=cart.reduce((a,l)=>a+unit(l)*l.qty,0),fee=feeOf(sub),sum=typeof r.total==="number"?r.total:sub+fee;
     LS.set(P+"last",{id:r.id,no:r.no,pickup:r.pickup,sum,fee,pay,name:cust.name,mode:isL()?"liefer":"abhol",address:isL()?addr.trim():""});
-    cart=[];saveCart();noteDraft="";sending=false;if(TEL){cust={name:"",phone:""};pay="bar";addr="";dmode="abhol"}showDone();
+    cart=[];saveCart();noteDraft="";sending=false;if(TEL){cust={name:"",phone:""};pay="bar";addr="";dmode="abhol";ecOk=false}showDone();
   }catch(e2){sending=false;err=(e2&&e2.message)||"Senden hat nicht geklappt. Bitte nochmal tippen oder anrufen: 0711 44038178";renderCart()}
 }
 // ---------- Bestätigung ----------
