@@ -105,7 +105,7 @@ body.tel header{border-bottom:6px solid #1f5fd1}body.tel header h1{color:#1f5fd1
 </style><style>header.hero{background:#fff;border-bottom:1px solid var(--line)}header.hero .top{padding:14px 16px}header.hero .top img{height:92px}header.hero h1{color:#111}header.hero h1 small{color:var(--muted)}.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}.strip img{width:100%;height:96px;object-fit:cover;border-radius:10px;display:block}.side{display:none}@media (max-width:520px){header.hero .top img{height:70px}header.hero h1{font-size:22px}.strip{grid-template-columns:repeat(3,1fr)}.strip img{height:78px}.strip img:nth-child(4){display:none}}@media (min-width:1300px){.strip{display:none}.side{display:grid;position:fixed;top:16px;bottom:96px;width:calc((100vw - 900px) / 2 - 40px);max-width:340px;gap:14px;grid-template-rows:1fr 1fr;z-index:1}.side.l{left:20px}.side.r{right:20px}.side img{width:100%;height:100%;object-fit:cover;border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.18)}}</style><style>.liefb{margin-left:auto;background:#0a7a3a;color:#fff;border-radius:14px;padding:10px 14px;font:14px/1.35 var(--body);max-width:300px}.liefb b{display:block;font-size:19px;margin-bottom:2px}@media (max-width:640px){header.hero .top{flex-wrap:wrap}.liefb{margin-left:0;max-width:none;width:100%;font-size:13px;padding:8px 12px}.liefb b{font-size:17px}}</style></head><body>
 <header class="hero"><div class="wrap top">
   <img alt="DELI - Est. 2021 - Echterdingen" src="/img/logo-deli.png" width="400" height="271">
-  <h1>Online bestellen<small>Abholung &amp; Lieferung · Tübinger Str. 8, Echterdingen</small></h1><div class="liefb"><b>🚗 Wir liefern!</b>Nur in Echterdingen · täglich ab 14 Uhr<br>ab 25 € · Liefergebühr 3 € · ab 50 € gratis</div>
+  <h1>Online bestellen<small>Abholung &amp; Lieferung · Tübinger Str. 8, Echterdingen</small></h1><div class="liefb"><b id="liefh">🚗 Wir liefern ab Montag 16.11.!</b>Nur in Echterdingen · täglich ab 14 Uhr<br>ab 25 € · Liefergebühr 3 € · ab 50 € gratis</div><script>if(new Date()>=new Date(2026,10,16))document.getElementById("liefh").textContent="🚗 Wir liefern!"</script>
 </div></header>
 <aside class="side l" aria-hidden="true"><img src="/img/doener.jpg" alt=""><img src="/img/pide.jpg" alt=""></aside><aside class="side r" aria-hidden="true"><img src="/img/pizza.jpg" alt=""><img src="/img/lahmacun.jpg" alt=""></aside><main class="wrap"><div class="strip"><img src="/img/doener.jpg" alt="D&ouml;ner Kebap" loading="lazy"><img src="/img/pizza.jpg" alt="Pizza" loading="lazy"><img src="/img/pide.jpg" alt="Pide" loading="lazy"><img src="/img/lahmacun.jpg" alt="Lahmacun" loading="lazy"></div>
   <p class="open" id="openState" style="margin-top:12px"></p>
@@ -238,6 +238,8 @@ const TELK=(function(){try{return "<?= telk ?>"}catch(e){return ""}})().replace(
 const TEL=!!TELK,P=TEL?"tel_":"deli_";
 // 13.11. Lieferung: seit 13.11. nachts fuer alle (Ender "ja fuer alle"). Nur Echterdingen, ab 25 €, bis 49,99 € 3 € Gebühr, ab 50 € gratis
 const LIEF=true;
+// 13.11. Ender: Lieferung erst ab Montag 16.11.2026
+const LSTART=new Date(2026,10,16);
 let dmode="abhol",addr=TEL?"":LS.get("deli_addr",""),ecOk=false;
 // Ender 13.11.: NUR Echterdingen. Andere Orte/PLZ werden abgelehnt (auch im Server)
 const NOT_ECHT=a=>{const s=a.toLowerCase().replace(/leinfelden-echterdingen/g,"");return /\b(leinfelden|stetten|musberg|oberaichen|unteraichen|filderstadt|bernhausen|stuttgart|plattenhardt|sielmingen|bonlanden|vaihingen|m(ö|oe)hringen|neuhausen|ostfildern|steinenbronn|waldenbuch)\b/.test(s)||(/\b\d{5}\b/.test(s)&&!/\b70771\b/.test(s))};const isL=()=>LIEF&&dmode==="liefer";const feeOf=s=>isL()?(s>=50?0:3):0;
@@ -275,11 +277,12 @@ function dayLabel(d){const t=new Date(),tm=new Date(t);tm.setDate(t.getDate()+1)
   return sameDay(d,t)?"heute":sameDay(d,tm)?"morgen":WD[d.getDay()]+" "+pad(d.getDate())+"."+pad(d.getMonth()+1)+".";}
 const when=d=>(sameDay(d,new Date())?"":dayLabel(d).replace(/^./,c=>c.toUpperCase())+" ")+hm(d);
 // Abholtage wie bei SumUp: die nächsten 3 offenen Tage, jeweils nur Zeiten in den Öffnungszeiten
-function slotDays(n=3,lead=20,from=0){
+function slotDays(n=3,lead=20,from=0,minDay=null){
   const now=new Date(),days=[];
   for(let i=0;i<8&&days.length<n;i++){
     const day=new Date(now);day.setDate(now.getDate()+i);
     const h=hoursFor(day),mid=new Date(day);mid.setHours(0,0,0,0);
+    if(minDay&&mid<minDay)continue;
     const at=m=>new Date(mid.getTime()+m*60000);
     const earliest=i===0?Math.max(h[0],Math.ceil((now-mid)/60000)+lead,from):Math.max(h[0],from), last=h[1]-10;
     if(earliest>last)continue;
@@ -406,7 +409,7 @@ $("openCart").onclick=()=>openSheet("cart");
 // ---------- Warenkorb + Bestellen ----------
 let pickupSel="",cust=TEL?{name:"",phone:""}:LS.get("deli_cust",{name:"",phone:""}),sending=false,err="";
 function renderCart(){
-  const s=$("sheet"),sd=CFG.paused&&!TEL?[]:slotDays(3,isL()?40:20,isL()?840:0),sl=sd.flat(),sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0),fee=feeOf(sum),low=isL()&&sum<25;
+  const s=$("sheet"),sd=CFG.paused&&!TEL?[]:slotDays(3,isL()?40:20,isL()?840:0,isL()?LSTART:null),sl=sd.flat(),sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0),fee=feeOf(sum),low=isL()&&sum<25;
   const outs=cart.filter(l=>isOut(l.name+" "+(l.extras||[]).join(" ")));
   if(!sl.find(d=>d.toISOString()===pickupSel))pickupSel=sl[0]?sl[0].toISOString():"";
   s.innerHTML=`<div class="sh"><h2>Warenkorb · Cart</h2><button class="x" data-close aria-label="Schließen">✕</button></div>
@@ -416,7 +419,7 @@ function renderCart(){
     ${l.cfg?`<div class="lh"><div class="lbon" style="flex:1">${bonLines(l).map(([c,t])=>`<span class="bl ${c}">${esc(t)}</span>`).join("")}</div><button class="ledit" data-edit="${i}">Ändern</button></div>`:""}</div>`).join(""):`<p class="note">Noch leer.</p>`}</div>
   <div class="total"><span>Summe</span><span>${eur(sum)}</span></div>
   ${LIEF?`<div class="chips"><button class="chip" data-dm="abhol" aria-pressed="${!isL()}">🏪 Abholung · Pick-up</button><button class="chip" data-dm="liefer" aria-pressed="${isL()}">🚗 Lieferung · Delivery</button></div>`:""}
-  ${isL()?`<div class="lief"><p class="note" style="margin:0">Wir liefern nur in <b>Echterdingen</b>. Lieferung ab 14 Uhr · ab 25 € · bis 49,99 € kostet sie 3 € · ab 50 € gratis.</p>
+  ${isL()?`<div class="lief"><p class="note" style="margin:0">${new Date()<LSTART?"<b>Wir liefern ab Montag 16.11.</b> ":""}Wir liefern nur in <b>Echterdingen</b>. Lieferung ab 14 Uhr · ab 25 € · bis 49,99 € kostet sie 3 € · ab 50 € gratis.</p>
     ${low?`<p class="err">Lieferung erst ab 25 € · noch ${eur(25-sum)} fehlen. Oder Abholung wählen.</p>`:`<div class="total" style="font-size:16px"><span>Liefergebühr</span><span>${fee?eur(fee):"gratis"}</span></div><div class="total"><span>Gesamt</span><span>${eur(sum+fee)}</span></div>`}
     <label class="f">Straße und Hausnummer <span>· Street + no.</span><input id="ad" autocomplete="${TEL?"off":"street-address"}" value="${esc(addr)}" maxlength="80" placeholder="z. B. Hauptstraße 12"></label>
     <p class="note" style="margin:0">70771 Leinfelden-Echterdingen · Ortsteil Echterdingen. Klingel/Etage bitte unten bei Hinweis.</p>
