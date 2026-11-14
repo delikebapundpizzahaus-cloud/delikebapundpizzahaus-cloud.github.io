@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><script>window.DELI_API="https://script.google.com/macros/s/AKfycbw8h6RbL3cyvXoOIFztEQOfbBSB3BndKC71EQbp6shhCl18yr6h3wpDlS8mLthgotU/exec";window.DELI_TEL_URL="https://delikebapundpizzahaus-cloud.github.io/telefon-h3w8pz51vd/"</script><link rel="icon" type="image/png" sizes="32x32" href="/icons/kueche-32.png"><link rel="icon" type="image/png" sizes="192x192" href="/icons/kueche-192.png"><link rel="apple-touch-icon" href="/icons/kueche-apple-180.png"><link rel="manifest" href="manifest.json"><meta name="apple-mobile-web-app-title" content="DELI KÃ¼che"><meta name="theme-color" content="#b85a12">
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><script>window.DELI_API="https://script.google.com/macros/s/AKfycbw8h6RbL3cyvXoOIFztEQOfbBSB3BndKC71EQbp6shhCl18yr6h3wpDlS8mLthgotU/exec";window.DELI_TEL_URL="https://delikebapundpizzahaus-cloud.github.io/telefon-h3w8pz51vd/";window.DELI_PRODUCTS=[["Kebap",["Kebap M 120 g","Kebap L 160 g","Kebap XL 200 g","Jumbo Kebap"]],["Yufka",["Yufka M 140 g","Yufka L 180 g","Yufka XL 220 g","Deli Spezial"]],["Schüler",["Schüler Kebap","Schüler Yufka","Schüler Box mit Pommes"]],["Kebapbox",["Box Scheibenfleisch","Box Hähnchen","Box Hackfleisch","Box gemischt"]],["Teller",["Teller mit Salat","Teller Pommes + Salat","Teller Reis + Salat"]],["Pide",["Pide Weichkäse","Pide Hackfleisch","Pide Hackfleisch + Käse","Pide Weichkäse + Spinat","Pide Weichkäse + Spinat + Ei","Pide Sucuk","Pide Kebap","Pide Extra-Zutat"]],["Pizza",["Pizza Margherita","Pizza Rindersalami","Pizza Putenschinken","Pizza Thunfisch + Zwiebeln","Pizza Pilze","Pizza Sucuk","Pizza Vegetarisch","Pizza Deli","Pizza Hawaii","Pizza Mix gemischt","Pizza 4 Jahreszeiten","Pizza Kebap"]],["Lahmacun",["Lahmacun Standard","Nur Lahmacun","Lahmacun mit Fleisch 100 g","Lahmacun mit Fleisch 160 g"]],["Seele",["Seele Weichkäse + Spinat","Seele Weichkäse","Seele Scheibenfleisch + Zwiebeln","Seele Hackfleisch + Zwiebeln","Seele Hähnchen + Zwiebeln"]],["Vegetarisch",["Falafel im Yufka","Falafel im Brot","Falafelbox","Falafelteller","Vegetarisch im Brot","Vegetarisch Yufka"]],["Pommes",["Pommes"]],["Salat",["Gemischter Salat + Fladenbrot","Thunfisch Salat + Fladenbrot","Nuggets Salat + Fladenbrot"]],["Nuggets",["Nuggets Box","Nuggets Teller"]],["Kinder",["Kinder Kebapbox + Pommes + Tetrapak","Kinder Nuggets (3) + Pommes"]],["Extras",["Extra Käse","Ketchup oder Mayo","Grillgemüse","Brot","Ei","Soße im Behälter"]],["Getränke",["Cola","Cola Zero","Fanta","Mezzo Mix","Paulaner","Paulaner Zero","Uludağ","Cockta","Red Bull","Ayran","Wasser still","Wasser mit Gas","Jana Eistee","Orangenlimonade 0,5","Cola Mix 0,5","Tetrapak"]]]</script><link rel="icon" type="image/png" sizes="32x32" href="/icons/kueche-32.png"><link rel="icon" type="image/png" sizes="192x192" href="/icons/kueche-192.png"><link rel="apple-touch-icon" href="/icons/kueche-apple-180.png"><link rel="manifest" href="manifest.json"><meta name="apple-mobile-web-app-title" content="DELI KÃ¼che"><meta name="theme-color" content="#b85a12">
 <title>DELI Küche · Online-Bestellungen</title>
 <style>
 :root{--bg:#171412;--surface:#221e1b;--fg:#f1ebe6;--muted:#ab9f97;--line:#3a332e;--accent:#ff6a4d;--ok:#8ed19c;--ok-soft:#1e3123;--warn:#f0c065;--warn-soft:#352a14;--late:#ff8a80;--late-soft:#3d1f1c;--paper:#fffdf6;--ink:#1d1a18}
@@ -68,7 +68,8 @@ h1{margin:0;font:700 26px "Arial Narrow",Arial,sans-serif}
   <button class="btn" id="kind">🎵 Ton: Klingel</button>
   <button class="btn" id="pause">Online-Bestellung pausieren</button>
   <button class="btn" id="showDone">Abgeholt anzeigen</button></div>
-<div class="panel"><b>Ist aus? Antippen = Kunden können es nicht mehr bestellen (rot = aus)</b><div class="outs" id="outs"></div></div>
+<div class="panel"><b>Ist aus? Antippen = Kunden können es nicht mehr bestellen (rot = aus)</b><div class="outs" id="outs"></div>
+  <details id="prodBox" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800">Einzelne Produkte aus … <span id="pCount"></span></summary><div id="prods"></div></details></div>
 <div class="cols">
   <section class="col"><h2>Neu <span class="n" id="nNew">0</span></h2><div id="cNew"></div></section>
   <section class="col"><h2>In Arbeit <span class="n" id="nWork">0</span></h2><div id="cWork"></div></section>
@@ -141,8 +142,13 @@ $("showDone").onclick=()=>{showDone=!showDone;$("showDone").classList.toggle("on
 $("pause").onclick=async()=>{cfg=await server("setPaused",KEY,!cfg.paused);renderCfg()};
 function renderCfg(){
   $("outs").innerHTML=Object.keys(cfg.out||OUTDEF).map(w=>`<button data-out="${esc(w)}" aria-pressed="${cfg.soldOut.includes(w)}">${cfg.soldOut.includes(w)?"✕ ":""}${esc(w)}</button>`).join("");
+  // 14.11. Ender: jedes Produkt einzeln aus ("#Name")
+  const P=window.DELI_PRODUCTS||[],po=cfg.soldOut.filter(w=>w[0]==="#");
+  $("pCount").textContent=po.length?"("+po.length+" aus: "+po.map(w=>w.slice(1)).join(", ")+")":"";
+  $("prods").innerHTML=P.map(([c,items])=>`<div style="margin-top:8px"><b style="font-size:13px">${esc(c)}</b><div class="outs">${items.map(n=>{const on=cfg.soldOut.includes("#"+n);return `<button data-out="${esc("#"+n)}" aria-pressed="${on}">${on?"✕ ":""}${esc(n)}</button>`}).join("")}</div></div>`).join("");
   $("pause").textContent=cfg.paused?"⏸ PAUSIERT – wieder einschalten":"Online-Bestellung pausieren";$("pause").classList.toggle("red",cfg.paused);
 }
+$("prods").onclick=e=>$("outs").onclick(e);
 $("outs").onclick=async e=>{const b=e.target.closest("[data-out]");if(!b)return;const w=b.dataset.out;
   const l=cfg.soldOut.includes(w)?cfg.soldOut.filter(x=>x!==w):[...cfg.soldOut,w];cfg.soldOut=l;renderCfg();cfg=await server("setSoldOut",KEY,l);renderCfg()};
 // 13.11. Bon drucken: Tablet (Android) -> Epson-App "TM Print Assistant" -> TM-m30II; sonst normaler Druck (80 mm)
@@ -225,7 +231,7 @@ let cxId=null,cxReason="";
 function openCancel(id){
   cxId=id;cxReason="";const o=orders.find(x=>x.id===id);
   $("dlgT").textContent="Nr. "+o.no+" stornieren – Grund für den Kunden:";
-  const rs=cfg.soldOut.map(w=>w+" ist leider aus").concat(["Scheibenfleisch ist leider aus","Hähnchen ist leider aus","Hackfleisch ist leider aus","Zu viel los, wir schaffen es nicht rechtzeitig"]);
+  const rs=cfg.soldOut.map(w=>w.replace(/^#/,"")+" ist leider aus").concat(["Scheibenfleisch ist leider aus","Hähnchen ist leider aus","Hackfleisch ist leider aus","Zu viel los, wir schaffen es nicht rechtzeitig"]);
   $("reasons").innerHTML=[...new Set(rs)].map(r=>`<button data-r="${esc(r)}">${esc(r)}</button>`).join("");
   $("ownReason").value="";$("dlg").hidden=false;
 }
