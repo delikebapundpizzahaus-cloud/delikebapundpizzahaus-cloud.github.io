@@ -21,6 +21,7 @@ header{background:var(--surface);border-bottom:1px solid var(--line)}
 .open.yes{background:var(--ok-soft);color:var(--ok)}
 .open.no{background:var(--late-soft);color:var(--late)}
 .outnote{font-size:15px;font-weight:800;padding:10px 12px;border-radius:10px;margin:0 0 12px;background:#fff1e0;color:#9a4300;border:2px solid #f0a040}.outnote:empty{display:none}
+.lunchnote{font-size:15px;font-weight:700;padding:10px 12px;border-radius:10px;margin:0 0 12px;background:#e8f5ec;color:#0a5a2c;border:2px solid #7cc493}.lunchnote:empty{display:none}
 .item small.o{display:block;color:#9a4300;font-weight:700}
 .cats{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;gap:6px;overflow-x:auto;padding:10px 16px;margin:0 -16px;scrollbar-width:none}
 .cats::-webkit-scrollbar{display:none}
@@ -112,6 +113,7 @@ body.tel header{border-bottom:6px solid #1f5fd1}body.tel header h1{color:#1f5fd1
 <aside class="side l" aria-hidden="true"><img src="/img/falafel.jpg" alt=""><img src="/img/pide.jpg" alt=""></aside><aside class="side r" aria-hidden="true"><img src="/img/pizza.jpg" alt=""><img src="/img/lahmacun.jpg" alt=""></aside><main class="wrap"><div class="strip"><img src="/img/falafel.jpg" alt="Falafel vegetarisch" loading="lazy"><img src="/img/pizza.jpg" alt="Pizza" loading="lazy"><img src="/img/pide.jpg" alt="Pide" loading="lazy"><img src="/img/lahmacun.jpg" alt="Lahmacun" loading="lazy"></div>
   <p class="open" id="openState" style="margin-top:12px"></p>
   <p class="outnote" id="outNote" role="status"></p>
+  <p class="lunchnote" id="lunchNote"></p>
   <nav class="cats" id="cats" aria-label="Kategorien"></nav>
   <div class="items" id="items"></div>
   <footer>Öffnungszeiten: Mo–Fr 11–21 Uhr · Sa–So 12–21 Uhr · Feiertage 13–20 Uhr<br>Fragen? Ruf uns an: 0711 44038178<br>Bezahlung bei Abholung oder Lieferung, bar oder mit Karte · Pay cash or card · Lieferung nur Echterdingen, ab 14 Uhr</footer><section class="about" style="margin-top:14px;font-size:14px;color:var(--muted)"><h2 style="font-size:18px;color:var(--fg);margin-bottom:4px">Deli Kebap und Pizza Haus in Echterdingen</h2><p style="margin:0">Döner, Kebap, Yufka, Pizza, Pide und Lahmacun – seit 2021 in der Tübinger Str. 8 in 70771 Leinfelden-Echterdingen, bei Stuttgart, nahe Flughafen und Messe. Online bestellen und im Laden abholen oder in Echterdingen liefern lassen (ab 14 Uhr, ab 25 €).</p><p style="margin:6px 0 0">Doner kebab and pizza in Echterdingen near Stuttgart Airport and Messe. Order online for pick-up or delivery in Echterdingen.</p></section>
@@ -260,10 +262,20 @@ function server(fn,...args){
     setTimeout(()=>{try{res(LOCAL[fn](...args))}catch(e){rej(e)}},300);
   });
 }
+// 14.11. Ender: hoechstens CFG.cap Produkte (ohne Getraenke/Extras) pro 15 Minuten - gleiche Rechnung wie Code.gs
+const NOFOOD=/^(Cola|Cola Zero|Fanta|Mezzo Mix|Paulaner|Paulaner Zero|Uludağ|Cockta|Red Bull|Ayran|Wasser still|Wasser mit Gas|Jana Eistee|Orangenlimonade 0,5|Cola Mix 0,5|Tetrapak|Extra Käse|Ketchup oder Mayo|Grillgemüse|Brot|Ei|Soße im Behälter)( · |$)/;
+const foodN=lines=>lines.filter(l=>!l.removed&&!NOFOOD.test(l.name)).reduce((s,l)=>s+l.qty,0);
+const openK=k=>{const d=new Date(k*900000),h=hoursFor(d),m=d.getHours()*60+d.getMinutes();return m>=h[0]&&m<=h[1]-10};
+function placeSlots(used,ready,created,n,cap){const S=900000,s=Math.floor(ready/S),min=Math.min(s,Math.max(Math.ceil(created/S),s-Math.max(3,Math.ceil(n/cap))+1)),t=[];let left=n;
+  for(let k=s;k>=min&&left>0;k--){if(k<s&&!openK(k))continue;const f=cap-(used[k]||0);if(f>0){const x=Math.min(f,left);t.push([k,x]);left-=x}}return left>0?null:t}
+function localLoad(orders,cap){const used={};orders.filter(o=>o.status!=="storniert").sort((a,b)=>new Date(a.created)-new Date(b.created)).forEach(o=>{
+  const n=foodN(o.lines);if(!n)return;const rd=new Date(o.pickup).getTime()-(o.mode==="liefer"?1200000:0);
+  (placeSlots(used,rd,new Date(o.created).getTime(),n,cap)||[[Math.floor(rd/900000),n]]).forEach(([k,c])=>used[k]=(used[k]||0)+c)});return used}
 const LOCAL={
-  saveOrder(o){const all=LS.get("t_orders",[]);const no=all.length+1;const id="t"+Date.now();all.push({...o,tel:undefined,src:o.tel?"tel":"online",id,no,status:"neu",created:new Date().toISOString(),total:(s=>s+(o.mode==="liefer"?(s>=50?0:3):0))(o.lines.reduce((s,l)=>s+(l.price+l.add)*l.qty,0))});LS.set("t_orders",all);return{id,no,pickup:o.pickup}},
+  saveOrder(o){const all=LS.get("t_orders",[]);
+    if(!o.tel){const used=localLoad(all,5),n=foodN(o.lines);let t=new Date(o.pickup).getTime();while(n&&!placeSlots(used,t-(o.mode==="liefer"?1200000:0),Date.now(),n,5))t=(Math.floor(t/900000)+1)*900000;o={...o,pickup:new Date(t).toISOString()}}const no=all.length+1;const id="t"+Date.now();all.push({...o,tel:undefined,src:o.tel?"tel":"online",id,no,status:"neu",created:new Date().toISOString(),total:(s=>s+(o.mode==="liefer"?(s>=50?0:3):0))(o.lines.reduce((s,l)=>s+(l.price+l.add)*l.qty,0))});LS.set("t_orders",all);return{id,no,pickup:o.pickup}},
   orderStatus(id){const o=LS.get("t_orders",[]).find(x=>x.id===id);return o?{status:o.status,no:o.no,pickup:o.pickup,reason:o.reason||""}:null},
-  getConfig(){return LS.get("t_cfg",{soldOut:[],paused:false,out:{"Scheibenfleisch":"Scheibe","Hähnchen":"Hähnchen","Hackfleisch":"Hack","Falafel":"Falafel","Pommes":"Pommes","Lahmacun":"Lahmacun","Pide":"Pide","Pizza":"Pizza","Seele":"Seele","Nuggets":"Nuggets"}})}
+  getConfig(){const c=LS.get("t_cfg",{soldOut:[],paused:false,out:{"Scheibenfleisch":"Scheibe","Hähnchen":"Hähnchen","Hackfleisch":"Hack","Falafel":"Falafel","Pommes":"Pommes","Lahmacun":"Lahmacun","Pide":"Pide","Pizza":"Pizza","Seele":"Seele","Nuggets":"Nuggets"}});c.cap=5;c.load=localLoad(LS.get("t_orders",[]),5);return c}
 };
 // Ausverkauft / Pause (stellt die Küche ein)
 let CFG={soldOut:[],paused:false,out:{}};
@@ -302,12 +314,18 @@ function slotDays(n=3,lead=20,from=0,minDay=null){
   }
   return days;
 }
-function slots(){return slotDays(1)[0]||[]}
+function slots(){return slotDays(1,WAIT())[0]||[]}
+// Wartezeit stellt die Kueche ein (Telefon-Bestellung: immer 20)
+const WAIT=()=>TEL?20:[20,30,45,60].includes(CFG.wait)?CFG.wait:20;
+// passt die Bestellung (n Produkte) in diese Zeit? Ist das 15-Min-Fenster voll, wird die Zeit nicht angeboten
+const fits=(d,n)=>!n||!CFG.load||!!placeSlots(CFG.load,d.getTime()-(isL()?1200000:0),Date.now(),n,CFG.cap||5);
 function renderOpen(){
   const now=new Date(),h=hoursFor(now),m=now.getHours()*60+now.getMinutes(),s=slots();
   const e=$("openState");
+  // 14.11. Ender: Mittags kommt alles gleichzeitig -> zum Vorbestellen einladen (bis 12:30, nicht bei Telefon)
+  $("lunchNote").textContent=!TEL&&(m<750||m>=h[1]-10)?"🕛 Mittags viel los? Jetzt schon für 12:00 vorbestellen und ohne Warten abholen · Pre-order your lunch, skip the line":"";
   if(CFG.paused&&!TEL){e.className="open no";e.textContent="Online-Bestellung gerade pausiert · Bitte anrufen: 0711 44038178";return false}
-  if(m>=h[0]&&m<h[1]-10){e.className="open yes";e.textContent="Jetzt geöffnet · Abholung in ca. 20 Minuten · Open now";}
+  if(m>=h[0]&&m<h[1]-10){e.className="open yes";e.textContent="Jetzt geöffnet · Abholung in ca. "+WAIT()+" Minuten · Open now";}
   else if(s.length&&sameDay(s[0],now)){e.className="open yes";e.textContent="Noch geschlossen · Vorbestellen ab "+hm(s[0])+" Uhr möglich · Pre-order";}
   else if(s.length){e.className="open yes";e.textContent="Jetzt geschlossen · Du kannst schon für "+dayLabel(s[0])+" ab "+hm(s[0])+" Uhr vorbestellen · Pre-order";}
   else{e.className="open no";e.textContent="Heute geschlossen · Online-Bestellung wieder ab morgen · Closed today";}
@@ -419,7 +437,8 @@ $("openCart").onclick=()=>openSheet("cart");
 // ---------- Warenkorb + Bestellen ----------
 let pickupSel="",cust=TEL?{name:"",phone:""}:LS.get("deli_cust",{name:"",phone:""}),sending=false,err="";
 function renderCart(){
-  const s=$("sheet"),sd=CFG.paused&&!TEL?[]:slotDays(3,isL()?40:20,isL()?840:0,isL()?LSTART:null),sl=sd.flat(),sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0),fee=feeOf(sum),low=isL()&&sum<25;
+  const fn=foodN(cart),sd=CFG.paused&&!TEL?[]:slotDays(3,isL()?WAIT()+20:WAIT(),isL()?840:0,isL()?LSTART:null).map(g=>TEL?g:g.filter(d=>fits(d,fn))).filter(g=>g.length);
+  const s=$("sheet"),sl=sd.flat(),sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0),fee=feeOf(sum),low=isL()&&sum<25;
   const outs=cart.filter(lineOut);
   if(!sl.find(d=>d.toISOString()===pickupSel))pickupSel=sl[0]?sl[0].toISOString():"";
   s.innerHTML=`<div class="sh"><h2>Warenkorb · Cart</h2><button class="x" data-close aria-label="Schließen">✕</button></div>
@@ -434,7 +453,7 @@ function renderCart(){
     <label class="f">Straße und Hausnummer <span>· Street + no.</span><input id="ad" autocomplete="${TEL?"off":"street-address"}" value="${esc(addr)}" maxlength="80" placeholder="z. B. Hauptstraße 12"></label>
     <p class="note" style="margin:0">70771 Leinfelden-Echterdingen · Ortsteil Echterdingen. Klingel/Etage bitte unten bei Hinweis.</p>
     <label style="display:flex;gap:10px;align-items:center;font-weight:700;margin-top:4px"><input type="checkbox" id="ec" style="width:24px;height:24px" ${ecOk?"checked":""}> Meine Adresse ist in Echterdingen · Address is in Echterdingen</label></div>`:""}
-  ${sl.length?`<label class="f">${isL()?"Lieferzeit <span>· Delivery time</span>":"Abholzeit <span>· Pick-up time</span>"}<select id="pk">${sd.map(g=>`<optgroup label="${(l=>l.replace(/^./,c=>c.toUpperCase())+(/^(heute|morgen)$/.test(l)?" · "+WD[g[0].getDay()]:""))(dayLabel(g[0]))}">${g.map((d,i)=>`<option value="${d.toISOString()}" ${d.toISOString()===pickupSel?"selected":""}>${sameDay(d,new Date())?(i===0?"So schnell wie möglich · ca. ":"")+hm(d):when(d)} Uhr</option>`).join("")}</optgroup>`).join("")}</select></label>`:`<p class="err">Gerade ist keine Bestellung möglich. Bitte anrufen: 0711 44038178</p>`}
+  ${sl.length?`<label class="f">${isL()?"Lieferzeit <span>· Delivery time</span>":"Abholzeit <span>· Pick-up time</span>"}<select id="pk">${sd.map(g=>`<optgroup label="${(l=>l.replace(/^./,c=>c.toUpperCase())+(/^(heute|morgen)$/.test(l)?" · "+WD[g[0].getDay()]:""))(dayLabel(g[0]))}">${g.map((d,i)=>`<option value="${d.toISOString()}" ${d.toISOString()===pickupSel?"selected":""}>${sameDay(d,new Date())?(i===0?"So schnell wie möglich · ca. ":"")+hm(d):when(d)} Uhr${TEL&&!fits(d,fn)?" · VOLL":""}</option>`).join("")}</optgroup>`).join("")}</select></label>`:`<p class="err">Gerade ist keine Bestellung möglich. Bitte anrufen: 0711 44038178</p>`}
   <label class="f">Name${TEL?" vom Anrufer":""}<input id="nm" autocomplete="${TEL?"off":"name"}" value="${esc(cust.name)}" maxlength="60"></label>
   <label class="f">Telefon <span>${isL()?"· für den Fahrer · Phone":TEL?"· optional":"· für Rückfragen · Phone"}</span><input id="ph" type="tel" inputmode="tel" autocomplete="${TEL?"off":"tel"}" value="${esc(cust.phone)}" maxlength="30"></label>
   <label class="f">Hinweis <span>· optional</span><input id="nt" maxlength="200" placeholder="z. B. Allergie"></label>
