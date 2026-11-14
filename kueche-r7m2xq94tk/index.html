@@ -161,6 +161,7 @@ function bonText(o){
   L.push(["b",(o.pay==="karte"?"KARTE":"BAR")+(o.mode==="liefer"?" bei Lieferung":" bei Abholung")]);
   return L;
 }
+const REVIEW_URL="https://g.page/r/CXRQeSHImx7VEBE/review";
 const xe=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function bonXML(o){
   let x='<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"><text lang="de"/><text smooth="true"/>';
@@ -168,6 +169,9 @@ function bonXML(o){
     if(k==="hr"){x+='<text dw="false" dh="false" em="false">------------------------------------------&#10;</text>';return}
     x+=k==="big"?'<text dw="true" dh="true" em="true"/>':k==="b"?'<text dw="false" dh="false" em="true"/>':'<text dw="false" dh="false" em="false"/>';
     x+='<text>'+xe(t)+'&#10;</text>'});
+  // 14.11. Ender: QR "Bewerte uns bei Google" unten auf dem Bon
+  x+='<feed line="1"/><text align="center"/><text dw="false" dh="false" em="true"/><text>Hat\'s geschmeckt? Bewerte uns bei Google&#10;</text>'+
+    '<symbol type="qrcode_model_2" level="level_m" width="5">'+REVIEW_URL+'</symbol><text>&#10;Danke!&#10;</text><text align="left"/>';
   return x+'<feed line="3"/><cut type="feed"/></epos-print>';
 }
 function printBon(id){
@@ -176,7 +180,8 @@ function printBon(id){
     location.href="tmprintassistant://tmprintassistant.epson.com/print?ver=1&data-type=eposprintxml&reselect=no&cut=feed&fit-to-width=yes&paper-width=80&data="+encodeURIComponent(bonXML(o));
     return}
   let el=$("bonPrint");if(!el){el=document.createElement("div");el.id="bonPrint";document.body.appendChild(el)}
-  el.innerHTML=bonText(o).map(([k,t])=>k==="hr"?"<hr>":`<div class="${k==="big"?"big":""}" style="${k==="b"?"font-weight:700":""}">${esc(t)}</div>`).join("");
+  el.innerHTML=bonText(o).map(([k,t])=>k==="hr"?"<hr>":`<div class="${k==="big"?"big":""}" style="${k==="b"?"font-weight:700":""}">${esc(t)}</div>`).join("")+
+    '<div style="text-align:center;margin-top:8px;font-weight:700">Hat\'s geschmeckt? Bewerte uns bei Google<br><img src="/img/qr-bewerten.png" alt="" style="width:34mm;height:34mm"><br>Danke!</div>';
   window.print();
 }
 function ticket(o){
