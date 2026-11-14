@@ -71,7 +71,6 @@ h1{margin:0;font:700 26px "Arial Narrow",Arial,sans-serif}
 [hidden]{display:none!important}
 </style></head><body>
 <div class="top"><h1>DELI Küche · Online</h1><span class="st" id="sync">Verbinde …</span><span class="sp"></span>
-  <a class="btn tel" id="telBtn" target="_blank" rel="noopener">📞 Telefon-Bestellung</a>
   <button class="btn" id="sound">🔇 Ton einschalten</button>
   <button class="btn" id="kind">🎵 Ton: Klingel</button>
   <button class="btn" id="pause">Online-Bestellung pausieren</button>
@@ -94,7 +93,6 @@ h1{margin:0;font:700 26px "Arial Narrow",Arial,sans-serif}
 <script>
 const KEY=(function(){try{return "<?= key ?>"}catch(e){return ""}})().replace(/^<\?.*\?>$/,"")||new URLSearchParams(location.search).get("k")||"test";
 const APPURL=window.DELI_TEL_URL||(function(){try{return "<?= url ?>"}catch(e){return ""}})().replace(/^<\?.*\?>$/,"")||"Kunde.html";
-document.getElementById("telBtn").href=APPURL+"?tel=1&k="+encodeURIComponent(KEY);
 const ING=["Salat","Tomate","Zwiebel","Rotkraut","Weißkraut","Rucola","Petersilie","Gurke"];
 function bonLines(l){
   const out=[];
