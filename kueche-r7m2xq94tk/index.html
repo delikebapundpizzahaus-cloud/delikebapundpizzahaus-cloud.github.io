@@ -68,8 +68,7 @@ h1{margin:0;font:700 26px "Arial Narrow",Arial,sans-serif}
   <button class="btn" id="kind">🎵 Ton: Klingel</button>
   <button class="btn" id="pause">Online-Bestellung pausieren</button>
   <button class="btn" id="showDone">Abgeholt anzeigen</button></div>
-<div class="panel"><b>Ist aus? Antippen = Kunden können es nicht mehr bestellen (rot = aus)</b><div class="outs" id="outs"></div>
-  <details id="prodBox" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800">Einzelne Produkte aus … <span id="pCount"></span></summary><div id="prods"></div></details></div>
+<div class="panel"><b>Ist aus? Antippen = Kunden können es nicht mehr bestellen (rot = aus)</b><div class="outs" id="outs"></div></div>
 <div class="cols">
   <section class="col"><h2>Neu <span class="n" id="nNew">0</span></h2><div id="cNew"></div></section>
   <section class="col"><h2>In Arbeit <span class="n" id="nWork">0</span></h2><div id="cWork"></div></section>
@@ -142,13 +141,8 @@ $("showDone").onclick=()=>{showDone=!showDone;$("showDone").classList.toggle("on
 $("pause").onclick=async()=>{cfg=await server("setPaused",KEY,!cfg.paused);renderCfg()};
 function renderCfg(){
   $("outs").innerHTML=Object.keys(cfg.out||OUTDEF).map(w=>`<button data-out="${esc(w)}" aria-pressed="${cfg.soldOut.includes(w)}">${cfg.soldOut.includes(w)?"✕ ":""}${esc(w)}</button>`).join("");
-  // 14.11. Ender: jedes Produkt einzeln aus ("#Name")
-  const P=window.DELI_PRODUCTS||[],po=cfg.soldOut.filter(w=>w[0]==="#");
-  $("pCount").textContent=po.length?"("+po.length+" aus: "+po.map(w=>w.slice(1)).join(", ")+")":"";
-  $("prods").innerHTML=P.map(([c,items])=>`<div style="margin-top:8px"><b style="font-size:13px">${esc(c)}</b><div class="outs">${items.map(n=>{const on=cfg.soldOut.includes("#"+n);return `<button data-out="${esc("#"+n)}" aria-pressed="${on}">${on?"✕ ":""}${esc(n)}</button>`}).join("")}</div></div>`).join("");
   $("pause").textContent=cfg.paused?"⏸ PAUSIERT – wieder einschalten":"Online-Bestellung pausieren";$("pause").classList.toggle("red",cfg.paused);
 }
-$("prods").onclick=e=>$("outs").onclick(e);
 $("outs").onclick=async e=>{const b=e.target.closest("[data-out]");if(!b)return;const w=b.dataset.out;
   const l=cfg.soldOut.includes(w)?cfg.soldOut.filter(x=>x!==w):[...cfg.soldOut,w];cfg.soldOut=l;renderCfg();cfg=await server("setSoldOut",KEY,l);renderCfg()};
 // 13.11. Bon drucken: Tablet (Android) -> Epson-App "TM Print Assistant" -> TM-m30II; sonst normaler Druck (80 mm)
