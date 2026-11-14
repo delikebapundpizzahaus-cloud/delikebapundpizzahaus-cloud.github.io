@@ -280,8 +280,7 @@ const LOCAL={
 // Ausverkauft / Pause (stellt die Küche ein)
 let CFG={soldOut:[],paused:false,out:{}};
 const MEAT=["Scheibenfleisch","Hähnchen","Hackfleisch"];
-const lahm=t=>/^Pide /.test(t)?t.replace(/(?<!Kebap )Hackfleisch/g,""):t;
-const isOut=t=>(t=lahm(t),CFG.soldOut.some(w=>t.includes(CFG.out[w]))||(/Alle 3 Sorten/.test(t)&&CFG.soldOut.some(w=>MEAT.includes(w))));
+const isOut=t=>CFG.soldOut.some(w=>t.includes(CFG.out[w]))||(/Alle 3 Sorten/.test(t)&&CFG.soldOut.some(w=>MEAT.includes(w)));
 // 14.11. einzelne Produkte aus (Küche speichert "#Produktname")
 const prodsOut=()=>(CFG.soldOut||[]).filter(w=>w[0]==="#").map(w=>w.slice(1));
 const pOut=n=>prodsOut().includes(n);
