@@ -269,9 +269,13 @@ const LOCAL={
 let CFG={soldOut:[],paused:false,out:{}};
 const MEAT=["Scheibenfleisch","Hähnchen","Hackfleisch"];
 const isOut=t=>CFG.soldOut.some(w=>t.includes(CFG.out[w]))||(/Alle 3 Sorten/.test(t)&&CFG.soldOut.some(w=>MEAT.includes(w)));
-const itemOut=(it,c)=>it.half?false:it.v?it.v.every(([l])=>isOut(it.n+" "+l)):isOut(it.n);
+// 14.11. einzelne Produkte aus (Küche speichert "#Produktname")
+const prodsOut=()=>(CFG.soldOut||[]).filter(w=>w[0]==="#").map(w=>w.slice(1));
+const pOut=n=>prodsOut().includes(n);
+const lineOut=l=>isOut(l.name+" "+(l.extras||[]).join(" "))||prodsOut().some(p=>l.name===p||l.name.startsWith(p+" · "));
+const itemOut=(it,c)=>it.half?false:pOut(it.n)?true:it.v?it.v.every(([l])=>isOut(it.n+" "+l)):isOut(it.n);
 // 14.11. Ender: Kunde soll gleich oben sehen, was gerade aus ist
-function renderOutNote(){const l=(CFG.soldOut||[]).filter(w=>CFG.out&&CFG.out[w]);$("outNote").textContent=l.length?"⚠️ Im Moment nicht verfügbar: "+l.join(", ")+" · Currently not available":""}
+function renderOutNote(){const l=(CFG.soldOut||[]).filter(w=>CFG.out&&CFG.out[w]).concat(prodsOut());$("outNote").textContent=l.length?"⚠️ Im Moment nicht verfügbar: "+l.join(", ")+" · Currently not available":""}
 const partOut=(it,c)=>{const t=it.v?it.v.map(([l])=>it.n+" "+l):it.half?halfOptions(c).map(([n])=>c+" "+n):[it.n];return (CFG.soldOut||[]).filter(w=>CFG.out&&CFG.out[w]&&t.some(x=>x.includes(CFG.out[w])))};
 async function loadConfig(){try{CFG=await server("getConfig");renderOpen();renderOutNote();renderCats();if(sheetMode)render()}catch(e){}}
 
@@ -331,7 +335,7 @@ $("items").addEventListener("click",e=>{
 });
 function halfOptions(c){
   const g=MENU.find(x=>x.c===c),pre=new RegExp("^"+c+" "),out=[];
-  g.items.forEach(it=>{if(it.half||/Extra-Zutat/.test(it.n))return;const base=it.n.replace(pre,"");if(it.v)it.v.forEach(([l,p])=>out.push([base+" "+l,p]));else out.push([base,it.p])});
+  g.items.forEach(it=>{if(it.half||/Extra-Zutat/.test(it.n))return;const base=it.n.replace(pre,"");if(it.v)it.v.forEach(([l,p])=>out.push([base+" "+l,p,it.n]));else out.push([base,it.p,it.n])});
   return out;
 }
 function pick(name,price,cfg){
@@ -362,7 +366,7 @@ function renderPick(){
   }
   if(half){
     s.innerHTML=`<div class="sh"><h2>${half.cat} halb/halb: ${half.a?`2. Hälfte (1. ist ${esc(half.a[0])})`:"1. Hälfte wählen"}</h2><button class="x" data-close aria-label="Schließen">✕</button></div>
-    <div class="vbtns">${halfOptions(half.cat).map(([n,p],i)=>{const o=isOut(half.cat+" "+n);return `<button data-h="${i}" ${o?"disabled":""}>½ ${esc(n)}<small>${o?"Gerade aus":eur(p)}</small></button>`}).join("")}</div>
+    <div class="vbtns">${halfOptions(half.cat).map(([n,p,src],i)=>{const o=isOut(half.cat+" "+n)||pOut(src);return `<button data-h="${i}" ${o?"disabled":""}>½ ${esc(n)}<small>${o?"Gerade aus":eur(p)}</small></button>`}).join("")}</div>
     <p class="note">${HALFP[half.cat]?`${half.cat} halb/halb kostet ${eur(HALFP[half.cat])}.`:"Es zählt der Preis der teureren Hälfte."}</p>`;
     return;
   }
@@ -416,7 +420,7 @@ $("openCart").onclick=()=>openSheet("cart");
 let pickupSel="",cust=TEL?{name:"",phone:""}:LS.get("deli_cust",{name:"",phone:""}),sending=false,err="";
 function renderCart(){
   const s=$("sheet"),sd=CFG.paused&&!TEL?[]:slotDays(3,isL()?40:20,isL()?840:0,isL()?LSTART:null),sl=sd.flat(),sum=cart.reduce((a,l)=>a+unit(l)*l.qty,0),fee=feeOf(sum),low=isL()&&sum<25;
-  const outs=cart.filter(l=>isOut(l.name+" "+(l.extras||[]).join(" ")));
+  const outs=cart.filter(lineOut);
   if(!sl.find(d=>d.toISOString()===pickupSel))pickupSel=sl[0]?sl[0].toISOString():"";
   s.innerHTML=`<div class="sh"><h2>Warenkorb · Cart</h2><button class="x" data-close aria-label="Schließen">✕</button></div>
   <div>${cart.length?cart.map((l,i)=>`<div class="line"><div class="lh"><span class="lname">${esc(l.name)}</span>
