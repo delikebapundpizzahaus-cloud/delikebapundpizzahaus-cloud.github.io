@@ -242,7 +242,7 @@ const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){re
 const TELK=(function(){try{return "<?= telk ?>"}catch(e){return ""}})().replace(/^<\?.*\?>$/,"")||(new URLSearchParams(location.search).get("tel")==="1"?(new URLSearchParams(location.search).get("k")||"test"):"");
 const TEL=!!TELK,P=TEL?"tel_":"deli_";
 // 13.11. Lieferung: seit 13.11. nachts fuer alle (Ender "ja fuer alle"). Nur Echterdingen, ab 25 €, bis 49,99 € 3 € Gebühr, ab 50 € gratis
-const LIEF=true;
+const LIEF=false; // 16.11. Ender: Lieferung erstmal aus (keine Kraft) - wieder an: true + build-pages.ps1 -Lieferung
 // 13.11. Ender: Lieferung erst ab Montag 16.11.2026
 const LSTART=new Date(2026,10,16);
 let dmode="abhol",addr=TEL?"":LS.get("deli_addr",""),ecOk=false;
