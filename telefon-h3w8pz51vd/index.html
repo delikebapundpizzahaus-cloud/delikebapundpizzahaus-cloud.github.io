@@ -71,7 +71,7 @@ header{background:var(--surface);border-bottom:1px solid var(--line)}
 .mode button[data-mode="nur"][aria-pressed="true"]{border-color:var(--warn);background:var(--warn-soft);color:var(--warn)}
 .lbon{display:grid;gap:1px}
 .bl{font-weight:800;font-size:14px}
-.bl.all{color:#00a32e}.bl.no{color:#0047d4}.bl.sa{color:#e00000}.bl.ex{color:var(--fg)}
+.bl.all{color:#00a32e}.bl.no{color:#0047d4}.bl.sa{color:#e00000}.bl.ex{color:var(--fg)}.bl.pom{color:#c25e00;font-weight:800}
 .bl.nur{background:var(--warn-soft);padding:2px 6px;border-radius:6px;justify-self:start}
 .big{border:0;background:var(--accent);color:var(--accent-fg);border-radius:14px;padding:16px;font-family:var(--display);font-size:22px;font-weight:700;width:100%}
 .big:disabled{opacity:.45;cursor:not-allowed}
@@ -226,8 +226,11 @@ function bonLines(l){
     else if(ohne.length<=have.length){out.push(["all","MIT ALLEM"]);out.push(["no","OHNE "+ohne.join(", ").toUpperCase()])}
     else out.push(["nur","NUR "+have.join(", ").toUpperCase()]);
   }
-  if(l.extras&&l.extras.length)out.push(["ex","EXTRA: "+l.extras.join(", ").toUpperCase()]);
+  // 19.11. Ender: Pommes kommt in eine eigene Schale -> eigene Zeile, nicht unter EXTRA
+  const ex=(l.extras||[]).filter(x=>x!=="Pommes");
+  if(ex.length)out.push(["ex","EXTRA: "+ex.join(", ").toUpperCase()]);
   if(l.cups&&l.cups.length)out.push(["ex","SOSSE IM BECHER: "+l.cups.join(", ").toUpperCase()]);
+  if((l.extras||[]).includes("Pommes"))out.push(["pom","+ POMMES IN EXTRA SCHALE"]);
   return out;
 }
 const $=id=>document.getElementById(id);
@@ -365,7 +368,7 @@ function tiles(list,sel,kind,mode){
     const on=sel.includes(n),cls=mode==="remove"?(on?"x":"on"):(on?"on":"");
     const pic=PHOTO[n]?`<img class="ph" src="${PHOTO[n]}" alt="">`:`<span class="em">${em}</span>`;
     if(kind==="extra"&&isOut(n))return `<button class="tile" disabled>${pic}${esc(n)}<span class="pr">aus</span></button>`;
-    return `<button class="tile ${cls}" data-k="${kind}" data-n="${esc(n)}" aria-pressed="${on}">${pic}${esc(n)}${p?`<span class="pr">+${eur(p)}</span>`:""}</button>`}).join("")}</div>`;
+    return `<button class="tile ${cls}" data-k="${kind}" data-n="${esc(n)}" aria-pressed="${on}">${pic}${esc(kind==="extra"&&n==="Pommes"?"Pommes in Schale":n)}${p?`<span class="pr">+${eur(p)}</span>`:""}</button>`}).join("")}</div>`;
 }
 const addOf=b=>b.extras.reduce((s,n)=>s+EXTRAS.find(x=>x[0]===n)[2],0)+b.cups.reduce((s,n)=>s+CUPS.find(x=>x[0]===n)[2],0);
 function renderPick(){
