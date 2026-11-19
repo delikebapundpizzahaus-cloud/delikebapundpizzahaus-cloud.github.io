@@ -49,7 +49,7 @@ h1{margin:0;font:700 26px "Arial Narrow",Arial,sans-serif}
 .ln b{font-size:16px}
 .bl{display:block;font-weight:800;font-size:16px}
 /* Kräftige Schriftfarben, damit Mitarbeiter auf einen Blick sehen: grün = mit allem, rot = Soße, blau = ohne/nur */
-.bl.all{color:#00a32e}.bl.sa{color:#e00000}.bl.no{color:#0047d4}.bl.nur{color:#0047d4}.bl.ex{color:#1d1a18}
+.bl.all{color:#00a32e}.bl.sa{color:#e00000}.bl.no{color:#0047d4}.bl.nur{color:#0047d4}.bl.ex{color:#1d1a18}.bl.pom{color:#c25e00;font-weight:800}
 .ln{position:relative}
 .rm{float:right;border:1px solid #b3261e;background:#fff;color:#b3261e;border-radius:8px;padding:6px 10px;font:700 13px system-ui,sans-serif}
 .rm.armed{background:#b3261e;color:#fff}
@@ -101,8 +101,11 @@ function bonLines(l){
     if(!ohne.length)out.push(["all","MIT ALLEM"]);else if(!have.length)out.push(["no","KEINE ZUTATEN"]);
     else if(ohne.length<=have.length){out.push(["all","MIT ALLEM"]);out.push(["no","OHNE "+ohne.join(", ").toUpperCase()])}
     else out.push(["nur","NUR "+have.join(", ").toUpperCase()]);}
-  if(l.extras&&l.extras.length)out.push(["ex","EXTRA: "+l.extras.join(", ").toUpperCase()]);
+  // 19.11. Ender: Pommes kommt in eine eigene Schale -> eigene Zeile, nicht unter EXTRA
+  const ex=(l.extras||[]).filter(x=>x!=="Pommes");
+  if(ex.length)out.push(["ex","EXTRA: "+ex.join(", ").toUpperCase()]);
   if(l.cups&&l.cups.length)out.push(["ex","SOSSE IM BECHER: "+l.cups.join(", ").toUpperCase()]);
+  if((l.extras||[]).includes("Pommes"))out.push(["pom","+ POMMES IN EXTRA SCHALE"]);
   return out;
 }
 const $=id=>document.getElementById(id);
@@ -178,7 +181,7 @@ function bonText(o){
   L.push(["",o.name+(o.phone?"  Tel. "+o.phone:"")]);
   if(o.mode==="liefer")L.push(["big",o.address+", Echterdingen"]);
   L.push(["hr",""]);
-  o.lines.filter(l=>!l.removed).forEach(l=>{L.push(["b",l.qty+"x "+l.name+"   "+eur(((Number(l.price)||0)+(Number(l.add)||0))*l.qty)]);bonLines(l).forEach(([c,t])=>L.push(["","   "+t]))});
+  o.lines.filter(l=>!l.removed).forEach(l=>{L.push(["b",l.qty+"x "+l.name+"   "+eur(((Number(l.price)||0)+(Number(l.add)||0))*l.qty)]);bonLines(l).forEach(([c,t])=>L.push([c==="pom"?"b":"","   "+t]))});
   L.push(["hr",""]);
   if(o.note)L.push(["b","HINWEIS: "+o.note]);
   if(o.fee)L.push(["","Liefergebühr "+eur(o.fee)]);
